@@ -6,4 +6,18 @@ Each third-party component that is distributed with this repository must be docu
 
 ## Included third-party materials
 
-None at this time.
+### Quaternius — Universal Base Characters
+
+- Author: Quaternius
+- Asset: Universal Base Characters
+- License: CC0 1.0
+- Source: Quaternius official website
+- Usage: Humanoid citizen character models for the Civilization Arena visual layer.
+
+### Quaternius — Universal Animation Library
+
+- Author: Quaternius
+- Asset: Universal Animation Library
+- License: CC0 1.0
+- Source: Quaternius official website
+- Usage: Humanoid animations used for Civilization Arena characters.
