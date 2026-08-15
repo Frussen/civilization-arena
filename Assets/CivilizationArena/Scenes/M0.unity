@@ -173,8 +173,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 139201365}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 0
 --- !u!114 &139201369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +216,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!1001 &185500647
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -565,7 +565,7 @@ MonoBehaviour:
     desiredWorkers: 3
   - workplace: {fileID: 1674926887}
     desiredWorkers: 5
-  offerWage: 5
+  maximumOfferWage: 5
   decisionIntervalMinutes: 30
 --- !u!114 &361394903
 MonoBehaviour:
@@ -833,6 +833,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &637926094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -875,8 +876,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 637926097}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 0
 --- !u!114 &637926097
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1121,6 +1121,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &780165623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1163,8 +1164,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 780165626}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 1
 --- !u!114 &780165626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1936,6 +1936,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1126340300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1978,8 +1979,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1126340303}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 0
 --- !u!114 &1126340303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2186,6 +2186,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1229737671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2228,8 +2229,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1229737674}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 1
 --- !u!114 &1229737674
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2379,6 +2379,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1249443570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2421,8 +2422,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1249443573}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 1
 --- !u!114 &1249443573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2629,6 +2629,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1608182528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2671,8 +2672,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1608182531}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 1
 --- !u!114 &1608182531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2822,6 +2822,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1642702459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2864,8 +2865,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1642702462}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 0
 --- !u!114 &1642702462
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3281,6 +3281,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!114 &1980183595
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3323,8 +3324,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 1980183598}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 0
 --- !u!114 &1980183598
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3398,8 +3398,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   mover: {fileID: 2042153796}
   residentialArea: {fileID: 970434795}
-  workStartHour: 8
-  workEndHour: 18
+  workShift: 1
 --- !u!114 &2042153796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3462,6 +3461,7 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   currentEmployer: {fileID: 0}
   currentWage: 0
+  reservationWage: 5
 --- !u!1001 &2069238316
 PrefabInstance:
   m_ObjectHideFlags: 0

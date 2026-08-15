@@ -6,16 +6,24 @@ public class CitizenRoutine : MonoBehaviour
     [SerializeField] private CitizenMover mover;
 
     [SerializeField] private ResidentialArea residentialArea;
-
-    [SerializeField] private int workStartHour = 8;
-    [SerializeField] private int workEndHour = 18;
+    [SerializeField] private WorkShift workShift = WorkShift.Day;
 
     private CitizenWorkAssignment workAssignment;
     private Transform currentDestination;
 
-    public bool IsWorkingTime =>
-        clock.Hour >= workStartHour &&
-        clock.Hour < workEndHour;
+    public WorkShift Shift => workShift;
+    public bool IsWorkingTime
+    {
+        get
+        {
+            if (workShift == WorkShift.Night)
+            {
+                return clock.Hour >= 18 || clock.Hour < 4;
+            }
+
+            return clock.Hour >= 8 && clock.Hour < 18;
+        }
+    }
 
     private void Awake()
     {
