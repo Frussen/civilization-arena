@@ -50,20 +50,37 @@ public class ManualAgentController : MonoBehaviour
             return;
         }
 
-        foreach (WorkplaceAllocation allocation in workplaceAllocations)
+        int[] assignedWorkers = new int[workplaceAllocations.Length];
+
+        for (int i = 0; i < workplaceAllocations.Length; i++)
         {
-            if (allocation == null ||
-                allocation.Workplace == null ||
-                allocation.DesiredWorkers <= 0)
+            WorkplaceAllocation allocation = workplaceAllocations[i];
+            if (allocation != null && allocation.Workplace != null)
+            {
+                assignedWorkers[i] =
+                    CountAssignedWorkers(allocation.Workplace);
+            }
+        }
+
+        HireUnemployedWorkers(assignedWorkers);
+        ReallocateSurplusWorkers(assignedWorkers);
+    }
+
+    private void HireUnemployedWorkers(int[] assignedWorkers)
+    {
+        for (int i = 0; i < workplaceAllocations.Length; i++)
+        {
+            WorkplaceAllocation allocation = workplaceAllocations[i];
+            if (allocation == null || allocation.Workplace == null)
             {
                 continue;
             }
 
-            int assignedWorkers = CountAssignedWorkers(allocation.Workplace);
+            int desiredWorkers = Mathf.Max(0, allocation.DesiredWorkers);
 
             foreach (CitizenEmployment citizen in citizens)
             {
-                if (assignedWorkers >= allocation.DesiredWorkers)
+                if (assignedWorkers[i] >= desiredWorkers)
                 {
                     break;
                 }
@@ -78,10 +95,115 @@ public class ManualAgentController : MonoBehaviour
                     allocation.Workplace,
                     offerWage))
                 {
-                    assignedWorkers++;
+                    assignedWorkers[i]++;
                 }
             }
         }
+    }
+
+    private void ReallocateSurplusWorkers(int[] assignedWorkers)
+    {
+        for (int targetIndex = 0;
+             targetIndex < workplaceAllocations.Length;
+             targetIndex++)
+        {
+            WorkplaceAllocation target = workplaceAllocations[targetIndex];
+            if (target == null || target.Workplace == null)
+            {
+                continue;
+            }
+
+            int desiredWorkers = Mathf.Max(0, target.DesiredWorkers);
+
+            while (assignedWorkers[targetIndex] < desiredWorkers)
+            {
+                bool reassignedWorker = false;
+
+                foreach (CitizenEmployment citizen in citizens)
+                {
+                    if (!TryGetSurplusSource(
+                        citizen,
+                        target.Workplace,
+                        assignedWorkers,
+                        out int sourceIndex))
+                    {
+                        continue;
+                    }
+
+                    if (citizen.CurrentWage == int.MaxValue)
+                    {
+                        continue;
+                    }
+
+                    int reassignmentWage = citizen.CurrentWage + 1;
+                    if (citizen.TryAcceptOffer(
+                        employer,
+                        target.Workplace,
+                        reassignmentWage))
+                    {
+                        assignedWorkers[sourceIndex]--;
+                        assignedWorkers[targetIndex]++;
+                        reassignedWorker = true;
+                        break;
+                    }
+                }
+
+                if (!reassignedWorker)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    private bool TryGetSurplusSource(
+        CitizenEmployment citizen,
+        Workplace targetWorkplace,
+        int[] assignedWorkers,
+        out int sourceIndex)
+    {
+        sourceIndex = -1;
+
+        if (citizen == null || citizen.CurrentEmployer != employer)
+        {
+            return false;
+        }
+
+        CitizenWorkAssignment assignment =
+            citizen.GetComponent<CitizenWorkAssignment>();
+
+        if (assignment == null ||
+            assignment.CurrentWorkplace == null ||
+            assignment.CurrentWorkplace == targetWorkplace)
+        {
+            return false;
+        }
+
+        sourceIndex = FindAllocationIndex(assignment.CurrentWorkplace);
+        if (sourceIndex < 0)
+        {
+            return false;
+        }
+
+        int desiredWorkers = Mathf.Max(
+            0,
+            workplaceAllocations[sourceIndex].DesiredWorkers);
+
+        return assignedWorkers[sourceIndex] > desiredWorkers;
+    }
+
+    private int FindAllocationIndex(Workplace workplace)
+    {
+        for (int i = 0; i < workplaceAllocations.Length; i++)
+        {
+            WorkplaceAllocation allocation = workplaceAllocations[i];
+            if (allocation != null && allocation.Workplace == workplace)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private int CountAssignedWorkers(Workplace workplace)

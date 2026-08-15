@@ -7,8 +7,8 @@ public class CitizenEmployment : MonoBehaviour
     [SerializeField] private WorldClock clock;
 
     private CitizenWorkAssignment workAssignment;
-    private AgentTreasury currentEmployer;
-    private int currentWage;
+    [SerializeField] private AgentTreasury currentEmployer;
+    [SerializeField] private int currentWage;
 
     public int MinimumWage => MinimumAcceptableWage;
     public AgentTreasury CurrentEmployer => currentEmployer;

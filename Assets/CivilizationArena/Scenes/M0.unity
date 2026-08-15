@@ -215,6 +215,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!1001 &185500647
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -516,7 +518,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AgentTreasury
   clock: {fileID: 2071210469}
   initialGold: 100
-  goldIncomePerHour: 40
+  goldIncomePerHour: 50
   currentGold: 0
 --- !u!4 &361394901
 Transform:
@@ -829,6 +831,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &637926094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1115,6 +1119,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &780165623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1649,7 +1655,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Workplace
   resourceType: 0
   productionPerHour: 12
-  workRadius: 2.5
+  workRadius: 3.5
 --- !u!1001 &1071164233
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1928,6 +1934,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1126340300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2176,6 +2184,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1229737671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2367,6 +2377,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1249443570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2615,6 +2627,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1608182528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2806,6 +2820,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1642702459
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2915,7 +2931,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Workplace
   resourceType: 1
   productionPerHour: 12
-  workRadius: 2.5
+  workRadius: 3.5
 --- !u!4 &1674926888
 Transform:
   m_ObjectHideFlags: 0
@@ -3263,6 +3279,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!114 &1980183595
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3442,6 +3460,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CitizenEmployment
   clock: {fileID: 2071210469}
+  currentEmployer: {fileID: 0}
+  currentWage: 0
 --- !u!1001 &2069238316
 PrefabInstance:
   m_ObjectHideFlags: 0
