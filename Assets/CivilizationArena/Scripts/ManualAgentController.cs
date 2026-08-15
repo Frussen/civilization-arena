@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [System.Serializable]
 public class WorkplaceAllocation
@@ -16,7 +17,8 @@ public class ManualAgentController : MonoBehaviour
     [SerializeField] private AgentTreasury employer;
     [SerializeField] private CitizenEmployment[] citizens;
     [SerializeField] private WorkplaceAllocation[] workplaceAllocations;
-    [SerializeField] private int offerWage = 5;
+    [FormerlySerializedAs("offerWage")]
+    [SerializeField] private int maximumOfferWage = 5;
     [SerializeField] private int decisionIntervalMinutes = 30;
 
     private int accumulatedMinutes;
@@ -90,10 +92,16 @@ public class ManualAgentController : MonoBehaviour
                     continue;
                 }
 
+                int offeredWage = citizen.ReservationWage;
+                if (offeredWage > maximumOfferWage)
+                {
+                    continue;
+                }
+
                 if (citizen.TryAcceptOffer(
                     employer,
                     allocation.Workplace,
-                    offerWage))
+                    offeredWage))
                 {
                     assignedWorkers[i]++;
                 }
@@ -136,6 +144,11 @@ public class ManualAgentController : MonoBehaviour
                     }
 
                     int reassignmentWage = citizen.CurrentWage + 1;
+                    if (reassignmentWage > maximumOfferWage)
+                    {
+                        continue;
+                    }
+
                     if (citizen.TryAcceptOffer(
                         employer,
                         target.Workplace,

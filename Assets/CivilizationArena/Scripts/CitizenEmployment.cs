@@ -9,10 +9,12 @@ public class CitizenEmployment : MonoBehaviour
     private CitizenWorkAssignment workAssignment;
     [SerializeField] private AgentTreasury currentEmployer;
     [SerializeField] private int currentWage;
+    [SerializeField] private int reservationWage = MinimumAcceptableWage;
 
     public int MinimumWage => MinimumAcceptableWage;
     public AgentTreasury CurrentEmployer => currentEmployer;
     public int CurrentWage => currentWage;
+    public int ReservationWage => reservationWage;
     public bool IsEmployed => currentEmployer != null;
 
     private void Awake()
@@ -57,13 +59,14 @@ public class CitizenEmployment : MonoBehaviour
                 return false;
             }
         }
-        else if (offeredWage < MinimumAcceptableWage)
+        else if (offeredWage < reservationWage)
         {
             return false;
         }
 
         currentEmployer = employer;
         currentWage = offeredWage;
+        reservationWage = Mathf.Max(reservationWage, offeredWage);
         workAssignment.Assign(workplace);
         return true;
     }
