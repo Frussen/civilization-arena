@@ -37,3 +37,11 @@ Each third-party component that is distributed with this repository must be docu
 - License: CC0 1.0
 - Source: Quaternius official website
 - Usage: Medieval building assets used for the Civilization Arena residential area.
+
+### Quaternius — Temple
+
+- Author: Quaternius
+- Asset: Temple
+- Source: Poly Pizza
+- License: Public Domain (CC0)
+- Usage: Completed Wonder visual in Civilization Arena.

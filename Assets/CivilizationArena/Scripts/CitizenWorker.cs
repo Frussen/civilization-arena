@@ -28,6 +28,17 @@ public class CitizenWorker : MonoBehaviour
             return;
         }
 
+        WonderConstruction wonder =
+            workplace.GetComponent<WonderConstruction>();
+
+        if (wonder != null)
+        {
+            wonder.ContributeLabor(
+                employer,
+                clock.MinutesAdvancedThisFrame);
+            return;
+        }
+
         AgentResourceStockpile stockpile =
             employer.GetComponent<AgentResourceStockpile>();
 
