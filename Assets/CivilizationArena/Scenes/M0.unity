@@ -820,7 +820,7 @@ GameObject:
   m_Component:
   - component: {fileID: 913686655}
   m_Layer: 0
-  m_Name: Home
+  m_Name: Home_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1491,6 +1491,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1881241716
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1881241717}
+  m_Layer: 0
+  m_Name: Home_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1881241717
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1881241716}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 15, y: 0, z: 5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1920673706 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 7d1147a75c04c4b0dadc5de413a0dbea, type: 3}
@@ -1534,7 +1565,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CitizenRoutine
   clock: {fileID: 2071210469}
   mover: {fileID: 2042153796}
-  home: {fileID: 913686655}
+  home: {fileID: 1881241717}
   workStartHour: 8
   workEndHour: 18
 --- !u!114 &2042153796
@@ -1704,6 +1735,7 @@ SceneRoots:
   - {fileID: 953543082}
   - {fileID: 1757703792}
   - {fileID: 913686655}
+  - {fileID: 1881241717}
   - {fileID: 1007328705}
   - {fileID: 2071210470}
   - {fileID: 1674926888}
