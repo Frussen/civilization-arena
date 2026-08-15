@@ -19,9 +19,10 @@ public class CitizenMover : MonoBehaviour
         animator.SetBool("IsWalking", isWalking);
     }
 
-    public void MoveTo(Transform destination)
+    public void MoveTo(Transform destination, float stoppingDistance)
     {
         currentDestination = destination;
+        agent.stoppingDistance = stoppingDistance;
         agent.SetDestination(destination.position);
     }
 

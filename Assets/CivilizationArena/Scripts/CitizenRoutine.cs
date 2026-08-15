@@ -34,6 +34,9 @@ public class CitizenRoutine : MonoBehaviour
         }
 
         currentDestination = desiredDestination;
-        mover.MoveTo(currentDestination);
+        float stoppingDistance =
+            IsWorkingTime ? work.GetComponent<Workplace>().WorkRadius : 0.2f;
+
+        mover.MoveTo(currentDestination, stoppingDistance);
     }
 }

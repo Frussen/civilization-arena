@@ -21,3 +21,11 @@ Each third-party component that is distributed with this repository must be docu
 - License: CC0 1.0
 - Source: Quaternius official website
 - Usage: Humanoid animations used for Civilization Arena characters.
+
+### Quaternius — Stylized Nature MegaKit
+
+- Author: Quaternius
+- Asset: Stylized Nature MegaKit
+- License: CC0 1.0
+- Source: Quaternius official website
+- Usage: Environmental nature assets, including rocks used for the Quarry.
