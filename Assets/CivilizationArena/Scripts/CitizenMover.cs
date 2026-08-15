@@ -5,6 +5,7 @@ public class CitizenMover : MonoBehaviour
 {
     private NavMeshAgent agent;
     private Animator animator;
+    private Transform currentDestination;
 
     private void Awake()
     {
@@ -20,6 +21,25 @@ public class CitizenMover : MonoBehaviour
 
     public void MoveTo(Transform destination)
     {
+        currentDestination = destination;
         agent.SetDestination(destination.position);
+    }
+
+    public bool HasArrivedAt(Transform destination)
+    {
+        if (currentDestination != destination)
+        {
+            return false;
+        }
+
+        if (agent.pathPending)
+        {
+            return false;
+        }
+
+        float distance =
+            Vector3.Distance(transform.position, destination.position);
+
+        return distance <= agent.stoppingDistance + 0.2f;
     }
 }

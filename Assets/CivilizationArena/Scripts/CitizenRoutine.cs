@@ -13,6 +13,11 @@ public class CitizenRoutine : MonoBehaviour
 
     private Transform currentDestination;
 
+    public Transform WorkDestination => work;
+    public bool IsWorkingTime =>
+        clock.Hour >= workStartHour &&
+        clock.Hour < workEndHour;
+
     private void Start()
     {
         currentDestination = home;
@@ -21,7 +26,7 @@ public class CitizenRoutine : MonoBehaviour
     private void Update()
     {
         Transform desiredDestination =
-            IsWorkingHours() ? work : home;
+            IsWorkingTime ? work : home;
 
         if (desiredDestination == currentDestination)
         {
@@ -30,11 +35,5 @@ public class CitizenRoutine : MonoBehaviour
 
         currentDestination = desiredDestination;
         mover.MoveTo(currentDestination);
-    }
-
-    private bool IsWorkingHours()
-    {
-        return clock.Hour >= workStartHour &&
-               clock.Hour < workEndHour;
     }
 }

@@ -11,6 +11,8 @@ public class WorldClock : MonoBehaviour
     public int Hour => (totalMinutes / 60) % 24;
     public int Minute => totalMinutes % 60;
 
+    public int MinutesAdvancedThisFrame { get; private set; }
+
     private void Start()
     {
         totalMinutes = startHour * 60;
@@ -18,12 +20,16 @@ public class WorldClock : MonoBehaviour
 
     private void Update()
     {
+        MinutesAdvancedThisFrame = 0;
+
         accumulatedTime += Time.deltaTime;
 
         while (accumulatedTime >= realSecondsPerGameMinute)
         {
             accumulatedTime -= realSecondsPerGameMinute;
+
             totalMinutes++;
+            MinutesAdvancedThisFrame++;
         }
     }
 }
