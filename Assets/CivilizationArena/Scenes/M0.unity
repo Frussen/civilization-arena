@@ -440,7 +440,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 6.2, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -502,6 +502,7 @@ GameObject:
   - component: {fileID: 361394900}
   - component: {fileID: 361394902}
   - component: {fileID: 361394903}
+  - component: {fileID: 361394904}
   m_Layer: 0
   m_Name: Agent_A
   m_TagString: Untagged
@@ -567,12 +568,12 @@ MonoBehaviour:
   - {fileID: 1608182527}
   workplaceAllocations:
   - workplace: {fileID: 1007328706}
-    desiredWorkers: 3
+    desiredWorkers: 0
   - workplace: {fileID: 1674926887}
-    desiredWorkers: 5
+    desiredWorkers: 0
   - workplace: {fileID: 1896526195}
     desiredWorkers: 0
-  maximumOfferWage: 9
+  maximumOfferWage: 5
   decisionIntervalMinutes: 30
 --- !u!114 &361394903
 MonoBehaviour:
@@ -588,6 +589,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AgentResourceStockpile
   stone: 0
   wood: 0
+--- !u!114 &361394904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361394899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7951e628409454960b1787e850047966, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentTextInterface
+  clock: {fileID: 2071210469}
+  treasury: {fileID: 361394900}
+  stockpile: {fileID: 361394903}
+  manualController: {fileID: 361394902}
+  wonder: {fileID: 1896526194}
+  citizens:
+  - {fileID: 139201371}
+  - {fileID: 2042153801}
+  - {fileID: 1126340299}
+  - {fileID: 1249443569}
+  - {fileID: 1642702458}
+  - {fileID: 780165622}
+  - {fileID: 637926093}
+  - {fileID: 1229737670}
+  - {fileID: 1980183594}
+  - {fileID: 1608182527}
+  workplaceBindings:
+  - id: quarry
+    workplace: {fileID: 1007328706}
+  - id: lumber_camp
+    workplace: {fileID: 1674926887}
+  - id: wonder
+    workplace: {fileID: 1896526195}
+  latestObservation: 
+  actionJson: 
+  latestActionResult: 
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3059,7 +3098,7 @@ GameObject:
   - component: {fileID: 1674926888}
   - component: {fileID: 1674926887}
   m_Layer: 0
-  m_Name: LamberCamp
+  m_Name: LumberCamp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3100,7 +3139,7 @@ Transform:
   - {fileID: 482077953}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1757703790
+--- !u!1 &1743301055
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3108,8 +3147,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1757703792}
-  - component: {fileID: 1757703791}
+  - component: {fileID: 1743301057}
+  - component: {fileID: 1743301056}
   m_Layer: 0
   m_Name: Navigation
   m_TagString: Untagged
@@ -3117,13 +3156,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1757703791
+--- !u!114 &1743301056
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1757703790}
+  m_GameObject: {fileID: 1743301055}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
@@ -3147,15 +3186,15 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: e21230dffb6194787b560e0b83cfbdce, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: 3390c4e9c532445f5b72a78783e42840, type: 2}
   m_BuildHeightMesh: 0
---- !u!4 &1757703792
+--- !u!4 &1743301057
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1757703790}
+  m_GameObject: {fileID: 1743301055}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0, z: 0}
@@ -3845,11 +3884,11 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 1768522693}
-  - {fileID: 1757703792}
   - {fileID: 2071210470}
+  - {fileID: 1743301057}
   - {fileID: 1007328705}
   - {fileID: 1674926888}
   - {fileID: 970434796}
   - {fileID: 1910713170}
-  - {fileID: 361394901}
   - {fileID: 1896526196}
+  - {fileID: 361394901}

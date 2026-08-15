@@ -10,6 +10,7 @@ public class WorldClock : MonoBehaviour
 
     public int Hour => (totalMinutes / 60) % 24;
     public int Minute => totalMinutes % 60;
+    public int Day => totalMinutes / (24 * 60) + 1;
 
     public int MinutesAdvancedThisFrame { get; private set; }
 

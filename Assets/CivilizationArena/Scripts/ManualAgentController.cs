@@ -9,6 +9,11 @@ public class WorkplaceAllocation
 
     public Workplace Workplace => workplace;
     public int DesiredWorkers => desiredWorkers;
+
+    internal void SetDesiredWorkers(int value)
+    {
+        desiredWorkers = value;
+    }
 }
 
 public class ManualAgentController : MonoBehaviour
@@ -22,6 +27,52 @@ public class ManualAgentController : MonoBehaviour
     [SerializeField] private int decisionIntervalMinutes = 30;
 
     private int accumulatedMinutes;
+
+    public AgentTreasury Employer => employer;
+    public int MaximumOfferWage => maximumOfferWage;
+
+    public bool SetMaximumOfferWage(int value)
+    {
+        if (value <= 0)
+        {
+            return false;
+        }
+
+        maximumOfferWage = value;
+        return true;
+    }
+
+    public bool TryGetDesiredWorkers(
+        Workplace workplace,
+        out int desiredWorkers)
+    {
+        int allocationIndex = FindAllocationIndex(workplace);
+        if (allocationIndex < 0)
+        {
+            desiredWorkers = 0;
+            return false;
+        }
+
+        desiredWorkers = workplaceAllocations[allocationIndex].DesiredWorkers;
+        return true;
+    }
+
+    public bool SetDesiredWorkers(Workplace workplace, int desiredWorkers)
+    {
+        if (desiredWorkers < 0)
+        {
+            return false;
+        }
+
+        int allocationIndex = FindAllocationIndex(workplace);
+        if (allocationIndex < 0)
+        {
+            return false;
+        }
+
+        workplaceAllocations[allocationIndex].SetDesiredWorkers(desiredWorkers);
+        return true;
+    }
 
     private void Update()
     {
@@ -207,6 +258,11 @@ public class ManualAgentController : MonoBehaviour
 
     private int FindAllocationIndex(Workplace workplace)
     {
+        if (workplace == null || workplaceAllocations == null)
+        {
+            return -1;
+        }
+
         for (int i = 0; i < workplaceAllocations.Length; i++)
         {
             WorkplaceAllocation allocation = workplaceAllocations[i];
