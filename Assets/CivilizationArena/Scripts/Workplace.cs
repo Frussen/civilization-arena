@@ -1,12 +1,18 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Workplace : MonoBehaviour
 {
-    [SerializeField] private float stonePerHour = 12f;
-    [SerializeField] private float storedStone;
+    [SerializeField] private ResourceType resourceType = ResourceType.Stone;
+    [FormerlySerializedAs("stonePerHour")]
+    [SerializeField] private float productionPerHour = 12f;
+    [FormerlySerializedAs("storedStone")]
+    [SerializeField] private float storedAmount;
     [SerializeField] private float workRadius = 2.5f;
 
-    public float StoredStone => storedStone;
+    public ResourceType ResourceType => resourceType;
+    public float ProductionPerHour => productionPerHour;
+    public float StoredAmount => storedAmount;
     public float WorkRadius => workRadius;
 
     public bool IsWithinWorkArea(Vector3 worldPosition)
@@ -21,9 +27,9 @@ public class Workplace : MonoBehaviour
             return;
         }
 
-        float producedStone =
-            stonePerHour * simulatedMinutes / 60f;
+        float producedAmount =
+            productionPerHour * simulatedMinutes / 60f;
 
-        storedStone += producedStone;
+        storedAmount += producedAmount;
     }
 }
