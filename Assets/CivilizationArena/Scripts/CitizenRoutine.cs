@@ -6,17 +6,21 @@ public class CitizenRoutine : MonoBehaviour
     [SerializeField] private CitizenMover mover;
 
     [SerializeField] private Transform home;
-    [SerializeField] private Transform work;
 
     [SerializeField] private int workStartHour = 8;
     [SerializeField] private int workEndHour = 18;
 
+    private CitizenWorkAssignment workAssignment;
     private Transform currentDestination;
 
-    public Transform WorkDestination => work;
     public bool IsWorkingTime =>
         clock.Hour >= workStartHour &&
         clock.Hour < workEndHour;
+
+    private void Awake()
+    {
+        workAssignment = GetComponent<CitizenWorkAssignment>();
+    }
 
     private void Start()
     {
@@ -25,8 +29,11 @@ public class CitizenRoutine : MonoBehaviour
 
     private void Update()
     {
+        Workplace workplace = workAssignment.CurrentWorkplace;
+        bool shouldWork = IsWorkingTime && workplace != null;
+
         Transform desiredDestination =
-            IsWorkingTime ? work : home;
+            shouldWork ? workplace.transform : home;
 
         if (desiredDestination == currentDestination)
         {
@@ -35,7 +42,7 @@ public class CitizenRoutine : MonoBehaviour
 
         currentDestination = desiredDestination;
         float stoppingDistance =
-            IsWorkingTime ? work.GetComponent<Workplace>().WorkRadius : 0.2f;
+            shouldWork ? workplace.WorkRadius : 0.2f;
 
         mover.MoveTo(currentDestination, stoppingDistance);
     }
