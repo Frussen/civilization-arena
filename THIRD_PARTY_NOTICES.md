@@ -29,3 +29,11 @@ Each third-party component that is distributed with this repository must be docu
 - License: CC0 1.0
 - Source: Quaternius official website
 - Usage: Environmental nature assets, including rocks used for the Quarry.
+
+### Quaternius — Medieval Village Pack
+
+- Author: Quaternius
+- Asset: Medieval Village Pack
+- License: CC0 1.0
+- Source: Quaternius official website
+- Usage: Medieval building assets used for the Civilization Arena residential area.
