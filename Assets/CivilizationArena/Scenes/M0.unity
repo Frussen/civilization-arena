@@ -503,6 +503,7 @@ GameObject:
   - component: {fileID: 361394902}
   - component: {fileID: 361394903}
   - component: {fileID: 361394904}
+  - component: {fileID: 361394905}
   m_Layer: 0
   m_Name: Agent_A
   m_TagString: Untagged
@@ -535,7 +536,7 @@ Transform:
   m_GameObject: {fileID: 361394899}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalPosition: {x: 0, y: 100, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -627,6 +628,26 @@ MonoBehaviour:
   latestObservation: 
   actionJson: 
   latestActionResult: 
+--- !u!114 &361394905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361394899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddd88a1a50a69456e866482bb2502320, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentDecisionScheduler
+  worldClock: {fileID: 2071210469}
+  textInterface: {fileID: 361394904}
+  matchController: {fileID: 2071210471}
+  decisionIntervalMinutes: 360
+  requestDecisionOnStart: 1
+  awaitingAction: 0
+  simulatedMinutesUntilNextDecision: 0
+  decisionsRequested: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3840,6 +3861,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2071210470}
   - component: {fileID: 2071210469}
+  - component: {fileID: 2071210471}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -3876,6 +3898,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2071210471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30ba9abac61bf48d0af7f552a4756882, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchController
+  worldClock: {fileID: 2071210469}
+  objectiveWonder: {fileID: 1896526194}
+  pauseSimulationOnEnd: 1
+  isEnded: 0
+  success: 0
+  finalDay: 0
+  finalHour: 0
+  finalMinute: 0
+  latestMatchResult: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

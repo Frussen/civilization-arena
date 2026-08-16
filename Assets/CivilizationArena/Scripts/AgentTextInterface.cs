@@ -48,25 +48,34 @@ public class AgentTextInterface : MonoBehaviour
     [TextArea(2, 5)]
     [SerializeField] private string latestActionResult;
 
+    public string LatestObservation => latestObservation;
+    public event Action ActionApplied;
+
     [ContextMenu("Generate Observation")]
-    private void GenerateObservation()
+    private void GenerateObservationFromContextMenu()
+    {
+        GenerateObservation();
+    }
+
+    public bool GenerateObservation()
     {
         if (!Application.isPlaying)
         {
             Debug.LogWarning(
                 "Generate Observation is available only during Play Mode.",
                 this);
-            return;
+            return false;
         }
 
         if (!TryBuildObservation(out string observation, out string error))
         {
             Debug.LogWarning($"Observation failed: {error}", this);
-            return;
+            return false;
         }
 
         latestObservation = observation;
         Debug.Log(latestObservation, this);
+        return true;
     }
 
     [ContextMenu("Apply Action JSON")]
@@ -113,6 +122,7 @@ public class AgentTextInterface : MonoBehaviour
             "through ManualAgentController decision cycles.";
 
         Debug.Log(latestActionResult, this);
+        ActionApplied?.Invoke();
     }
 
     private bool TryBuildObservation(
