@@ -49,6 +49,7 @@ public class AgentTextInterface : MonoBehaviour
     [SerializeField] private string latestActionResult;
 
     public string LatestObservation => latestObservation;
+    public string LatestActionResult => latestActionResult;
     public event Action ActionApplied;
 
     [ContextMenu("Generate Observation")]
@@ -79,12 +80,19 @@ public class AgentTextInterface : MonoBehaviour
     }
 
     [ContextMenu("Apply Action JSON")]
-    private void ApplyActionJson()
+    private void ApplyActionJsonFromContextMenu()
     {
+        TryApplyActionJson(actionJson);
+    }
+
+    public bool TryApplyActionJson(string json)
+    {
+        actionJson = json;
+
         if (!Application.isPlaying)
         {
             RejectAction("Apply Action JSON is available only during Play Mode.");
-            return;
+            return false;
         }
 
         AgentStrategicAction action;
@@ -96,7 +104,7 @@ public class AgentTextInterface : MonoBehaviour
         catch (Exception)
         {
             RejectAction("Malformed JSON.");
-            return;
+            return false;
         }
 
         if (!TryValidateAction(
@@ -105,7 +113,7 @@ public class AgentTextInterface : MonoBehaviour
             out string error))
         {
             RejectAction(error);
-            return;
+            return false;
         }
 
         manualController.SetMaximumOfferWage(action.maximumOfferWage);
@@ -123,6 +131,24 @@ public class AgentTextInterface : MonoBehaviour
 
         Debug.Log(latestActionResult, this);
         ActionApplied?.Invoke();
+        return true;
+    }
+
+    public string[] GetConfiguredWorkplaceIds()
+    {
+        if (workplaceBindings == null)
+        {
+            return Array.Empty<string>();
+        }
+
+        string[] ids = new string[workplaceBindings.Length];
+
+        for (int i = 0; i < workplaceBindings.Length; i++)
+        {
+            ids[i] = workplaceBindings[i]?.Id;
+        }
+
+        return ids;
     }
 
     private bool TryBuildObservation(
@@ -174,6 +200,17 @@ public class AgentTextInterface : MonoBehaviour
         text.AppendLine($"wood={Format(stockpile.Wood)}");
         text.AppendLine(
             $"maximumOfferWage={manualController.MaximumOfferWage}");
+
+        text.AppendLine("laborMarketRules:");
+        text.AppendLine(
+            "unemployedHire: offeredWage must be >= reservationWage");
+        text.AppendLine(
+            "employedReassignment: offeredWage must be >= currentWage + 1");
+        text.AppendLine(
+            "maximumOfferWage: hard ceiling on hiring and reassignment offers");
+        text.AppendLine(
+            "desiredWorkerCounts: targets only; workers move only through " +
+            "valid ManualAgentController wage offers");
 
         text.AppendLine("wonder:");
         text.AppendLine(

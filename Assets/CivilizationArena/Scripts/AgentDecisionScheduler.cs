@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class AgentDecisionScheduler : MonoBehaviour
@@ -20,6 +21,7 @@ public class AgentDecisionScheduler : MonoBehaviour
     public int SimulatedMinutesUntilNextDecision =>
         simulatedMinutesUntilNextDecision;
     public int DecisionsRequested => decisionsRequested;
+    public event Action<int, string> DecisionRequested;
 
     private void Awake()
     {
@@ -111,6 +113,9 @@ public class AgentDecisionScheduler : MonoBehaviour
         awaitingAction = true;
         simulatedMinutesUntilNextDecision = 0;
         Time.timeScale = 0f;
+        DecisionRequested?.Invoke(
+            decisionsRequested,
+            textInterface.LatestObservation);
     }
 
     private void HandleActionApplied()
