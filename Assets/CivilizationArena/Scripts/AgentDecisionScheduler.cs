@@ -7,6 +7,8 @@ public class AgentDecisionScheduler : MonoBehaviour
     [SerializeField] private AgentTextInterface textInterface;
     [SerializeField] private MatchController matchController;
 
+    [SerializeField] private AgentControlMode controlMode =
+        AgentControlMode.Manual;
     [SerializeField] private int decisionIntervalMinutes = 360;
     [SerializeField] private bool requestDecisionOnStart = true;
 
@@ -16,7 +18,9 @@ public class AgentDecisionScheduler : MonoBehaviour
 
     private bool firstUpdatePending;
     private float timeScaleBeforePause = 1f;
+    private AgentControlMode activeControlMode;
 
+    public AgentControlMode ControlMode => controlMode;
     public bool AwaitingAction => awaitingAction;
     public int SimulatedMinutesUntilNextDecision =>
         simulatedMinutesUntilNextDecision;
@@ -29,6 +33,7 @@ public class AgentDecisionScheduler : MonoBehaviour
         decisionsRequested = 0;
         simulatedMinutesUntilNextDecision = SafeDecisionInterval;
         firstUpdatePending = true;
+        activeControlMode = controlMode;
     }
 
     private void OnEnable()
@@ -58,12 +63,24 @@ public class AgentDecisionScheduler : MonoBehaviour
         if (firstUpdatePending)
         {
             firstUpdatePending = false;
+            activeControlMode = controlMode;
 
-            if (requestDecisionOnStart)
+            if (controlMode == AgentControlMode.Api &&
+                requestDecisionOnStart)
             {
                 RequestDecision();
             }
 
+            return;
+        }
+
+        if (controlMode != activeControlMode)
+        {
+            HandleControlModeChanged();
+        }
+
+        if (controlMode == AgentControlMode.Manual)
+        {
             return;
         }
 
@@ -90,7 +107,8 @@ public class AgentDecisionScheduler : MonoBehaviour
 
     private void RequestDecision()
     {
-        if (awaitingAction ||
+        if (controlMode != AgentControlMode.Api ||
+            awaitingAction ||
             matchController == null ||
             matchController.IsEnded ||
             textInterface == null)
@@ -136,6 +154,34 @@ public class AgentDecisionScheduler : MonoBehaviour
         Time.timeScale = timeScaleBeforePause > 0f
             ? timeScaleBeforePause
             : 1f;
+    }
+
+    private void HandleControlModeChanged()
+    {
+        activeControlMode = controlMode;
+
+        if (controlMode == AgentControlMode.Manual)
+        {
+            bool schedulerOwnedPause = awaitingAction;
+            awaitingAction = false;
+            simulatedMinutesUntilNextDecision = SafeDecisionInterval;
+
+            if (schedulerOwnedPause &&
+                matchController != null &&
+                !matchController.IsEnded &&
+                Time.timeScale == 0f)
+            {
+                Time.timeScale = timeScaleBeforePause > 0f
+                    ? timeScaleBeforePause
+                    : 1f;
+            }
+
+            return;
+        }
+
+        awaitingAction = false;
+        simulatedMinutesUntilNextDecision = SafeDecisionInterval;
+        RequestDecision();
     }
 
     private int SafeDecisionInterval => Mathf.Max(1, decisionIntervalMinutes);

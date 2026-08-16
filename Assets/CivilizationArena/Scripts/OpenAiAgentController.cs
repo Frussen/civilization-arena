@@ -79,6 +79,18 @@ public class OpenAiAgentController : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (requestInFlight && !IsApiMode)
+        {
+            StopAllCoroutines();
+            requestInFlight = false;
+            latestApiStatus =
+                "OpenAI request discarded because control mode is Manual.";
+            latestApiError = string.Empty;
+        }
+    }
+
     private void HandleDecisionRequested(
         int decisionNumber,
         string observation)
@@ -89,6 +101,11 @@ public class OpenAiAgentController : MonoBehaviour
     [ContextMenu("Retry Current Decision")]
     private void RetryCurrentDecision()
     {
+        if (!IsApiMode)
+        {
+            return;
+        }
+
         if (!Application.isPlaying)
         {
             ReportFailure("Retry Current Decision is available only during Play Mode.");
@@ -128,7 +145,7 @@ public class OpenAiAgentController : MonoBehaviour
 
     private bool TryStartRequest(int decisionNumber, string observation)
     {
-        if (requestInFlight)
+        if (!IsApiMode || requestInFlight)
         {
             return false;
         }
@@ -219,6 +236,15 @@ public class OpenAiAgentController : MonoBehaviour
 
             yield return request.SendWebRequest();
 
+            if (!IsApiMode)
+            {
+                requestInFlight = false;
+                latestApiStatus =
+                    "OpenAI response discarded because control mode is Manual.";
+                latestApiError = string.Empty;
+                yield break;
+            }
+
             if (matchController == null || matchController.IsEnded)
             {
                 ReportFailure(
@@ -303,6 +329,15 @@ public class OpenAiAgentController : MonoBehaviour
         }
 
         latestModelAction = actionJson;
+
+        if (!IsApiMode)
+        {
+            requestInFlight = false;
+            latestApiStatus =
+                "OpenAI action discarded because control mode is Manual.";
+            latestApiError = string.Empty;
+            return;
+        }
 
         if (matchController == null || matchController.IsEnded)
         {
@@ -514,6 +549,10 @@ public class OpenAiAgentController : MonoBehaviour
         latestApiError = message;
         Debug.LogError(message, this);
     }
+
+    private bool IsApiMode =>
+        decisionScheduler != null &&
+        decisionScheduler.ControlMode == AgentControlMode.Api;
 
     [Serializable]
     private class OpenAiResponsesRequest
