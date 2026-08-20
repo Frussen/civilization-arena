@@ -35,6 +35,7 @@ public class AgentTextInterface : MonoBehaviour
     [SerializeField] private AgentTreasury treasury;
     [SerializeField] private AgentResourceStockpile stockpile;
     [SerializeField] private ManualAgentController manualController;
+    [SerializeField] private AgentDecisionScheduler decisionScheduler;
     [SerializeField] private WonderConstruction wonder;
     [SerializeField] private CitizenEmployment[] citizens;
     [SerializeField] private AgentWorkplaceBinding[] workplaceBindings;
@@ -50,6 +51,8 @@ public class AgentTextInterface : MonoBehaviour
 
     public string LatestObservation => latestObservation;
     public string LatestActionResult => latestActionResult;
+    public AgentTreasury Treasury => treasury;
+    public ManualAgentController ManualController => manualController;
     public event Action ActionApplied;
 
     [ContextMenu("Generate Observation")]
@@ -92,6 +95,14 @@ public class AgentTextInterface : MonoBehaviour
         if (!Application.isPlaying)
         {
             RejectAction("Apply Action JSON is available only during Play Mode.");
+            return false;
+        }
+
+        if (decisionScheduler != null &&
+            decisionScheduler.ControlMode != AgentControlMode.Manual)
+        {
+            RejectAction(
+                "Aggregate strategic actions are available only in Manual mode.");
             return false;
         }
 
@@ -151,6 +162,107 @@ public class AgentTextInterface : MonoBehaviour
         return ids;
     }
 
+    public bool TryGetOfferConfiguration(
+        out string[] citizenIds,
+        out CitizenEmployment[] configuredCitizens,
+        out string[] workplaceIds,
+        out Workplace[] configuredWorkplaces,
+        out string error)
+    {
+        return TryGetConfiguredObjects(
+            true,
+            out citizenIds,
+            out configuredCitizens,
+            out workplaceIds,
+            out configuredWorkplaces,
+            out error);
+    }
+
+    private bool TryGetConfiguredObjects(
+        bool requireUniqueCitizenIds,
+        out string[] citizenIds,
+        out CitizenEmployment[] configuredCitizens,
+        out string[] workplaceIds,
+        out Workplace[] configuredWorkplaces,
+        out string error)
+    {
+        citizenIds = Array.Empty<string>();
+        configuredCitizens = Array.Empty<CitizenEmployment>();
+        workplaceIds = Array.Empty<string>();
+        configuredWorkplaces = Array.Empty<Workplace>();
+
+        if (citizens == null || citizens.Length == 0)
+        {
+            error = "At least one citizen must be configured.";
+            return false;
+        }
+
+        if (workplaceBindings == null || workplaceBindings.Length == 0)
+        {
+            error = "At least one workplace binding must be configured.";
+            return false;
+        }
+
+        citizenIds = new string[citizens.Length];
+        configuredCitizens = new CitizenEmployment[citizens.Length];
+        HashSet<CitizenEmployment> uniqueCitizens =
+            new HashSet<CitizenEmployment>();
+        HashSet<string> uniqueCitizenIds = new HashSet<string>(
+            StringComparer.Ordinal);
+
+        for (int i = 0; i < citizens.Length; i++)
+        {
+            CitizenEmployment citizen = citizens[i];
+            string citizenId = citizen != null ? citizen.name : null;
+
+            if (citizen == null || !uniqueCitizens.Add(citizen))
+            {
+                error = "Configured citizens must be non-null and unique.";
+                return false;
+            }
+
+            if (requireUniqueCitizenIds &&
+                (string.IsNullOrWhiteSpace(citizenId) ||
+                 !uniqueCitizenIds.Add(citizenId)))
+            {
+                error =
+                    "API citizen names must be non-empty and unique.";
+                return false;
+            }
+
+            citizenIds[i] = citizenId;
+            configuredCitizens[i] = citizen;
+        }
+
+        workplaceIds = new string[workplaceBindings.Length];
+        configuredWorkplaces = new Workplace[workplaceBindings.Length];
+        HashSet<string> uniqueWorkplaceIds = new HashSet<string>(
+            StringComparer.Ordinal);
+        HashSet<Workplace> uniqueWorkplaces = new HashSet<Workplace>();
+
+        for (int i = 0; i < workplaceBindings.Length; i++)
+        {
+            AgentWorkplaceBinding binding = workplaceBindings[i];
+
+            if (binding == null ||
+                string.IsNullOrWhiteSpace(binding.Id) ||
+                binding.Workplace == null ||
+                !uniqueWorkplaceIds.Add(binding.Id) ||
+                !uniqueWorkplaces.Add(binding.Workplace))
+            {
+                error =
+                    "Configured workplace IDs and Workplaces must be non-null and unique.";
+                return false;
+            }
+
+            workplaceIds[i] = binding.Id;
+            configuredWorkplaces[i] = binding.Workplace;
+        }
+
+        error = null;
+        return true;
+    }
+
     private bool TryBuildObservation(
         out string observation,
         out string error)
@@ -163,6 +275,8 @@ public class AgentTextInterface : MonoBehaviour
         }
 
         float payrollPerHour = treasury.CurrentPayrollPerHour;
+        bool isApiMode = decisionScheduler != null &&
+            decisionScheduler.ControlMode == AgentControlMode.Api;
 
         float remainingLabor = Mathf.Max(
             0f,
@@ -197,25 +311,34 @@ public class AgentTextInterface : MonoBehaviour
             $"netGoldPerHour={Format(treasury.GoldIncomePerHour - payrollPerHour)}");
         text.AppendLine($"stone={Format(stockpile.Stone)}");
         text.AppendLine($"wood={Format(stockpile.Wood)}");
-        text.AppendLine(
-            $"maximumOfferWage={manualController.MaximumOfferWage}");
+        if (!isApiMode)
+        {
+            text.AppendLine(
+                $"maximumOfferWage={manualController.MaximumOfferWage}");
+        }
 
         text.AppendLine("laborMarketRules:");
         text.AppendLine(
             "unemployedHire: offeredWage must be >= reservationWage");
         text.AppendLine(
             "employedReassignment: offeredWage must be >= currentWage + 1");
-        text.AppendLine(
-            "maximumOfferWage: hard ceiling on hiring and reassignment offers");
+        if (!isApiMode)
+        {
+            text.AppendLine(
+                "maximumOfferWage: hard ceiling on hiring and reassignment offers");
+        }
         text.AppendLine(
             $"payrollCoverageHours: {Format(treasury.PayrollCoverageHours)}");
         text.AppendLine(
             "contractCoverage: currentGold must be >= " +
             "projectedPayrollPerHour * payrollCoverageHours");
         text.AppendLine("coverageFunds: checked but not reserved");
-        text.AppendLine(
-            "desiredWorkerCounts: targets only; workers move only through " +
-            "valid ManualAgentController wage offers");
+        if (!isApiMode)
+        {
+            text.AppendLine(
+                "desiredWorkerCounts: targets only; workers move only through " +
+                "valid ManualAgentController wage offers");
+        }
 
         text.AppendLine("wonder:");
         text.AppendLine(
@@ -234,13 +357,20 @@ public class AgentTextInterface : MonoBehaviour
         text.AppendLine("allocations:");
         foreach (AgentWorkplaceBinding binding in workplaceBindings)
         {
-            manualController.TryGetDesiredWorkers(
-                binding.Workplace,
-                out int desiredWorkers);
-
             int actualWorkers = CountActualWorkers(binding.Workplace);
-            text.AppendLine(
-                $"{binding.Id}: desired={desiredWorkers} actual={actualWorkers}");
+
+            if (isApiMode)
+            {
+                text.AppendLine($"{binding.Id}: actual={actualWorkers}");
+            }
+            else
+            {
+                manualController.TryGetDesiredWorkers(
+                    binding.Workplace,
+                    out int desiredWorkers);
+                text.AppendLine(
+                    $"{binding.Id}: desired={desiredWorkers} actual={actualWorkers}");
+            }
         }
 
         text.AppendLine("citizens:");
@@ -249,13 +379,28 @@ public class AgentTextInterface : MonoBehaviour
             AppendCitizenObservation(text, citizen);
         }
 
-        AgentStrategicAction actionReminder = BuildActionReminder();
-        text.AppendLine("availableActionJson:");
-        text.AppendLine(JsonUtility.ToJson(actionReminder));
-        text.Append(
-            "actionSemantics: set strategic targets only; hiring and " +
-            "reallocation use the existing simulation and may take effect " +
-            "on the next ManualAgentController decision cycle.");
+        if (isApiMode)
+        {
+            text.AppendLine("apiAction:");
+            text.AppendLine("make zero or more explicit employment offers");
+            text.AppendLine("offerFields: citizenId, workplaceId, wage");
+            text.AppendLine("employer: implicit=this_agent");
+            text.AppendLine(
+                "offersProcessed: sequentially in supplied order");
+            text.Append(
+                "rejectedOffers: valid gameplay outcomes; " +
+                "accepted/rejected individually");
+        }
+        else
+        {
+            AgentStrategicAction actionReminder = BuildActionReminder();
+            text.AppendLine("availableActionJson:");
+            text.AppendLine(JsonUtility.ToJson(actionReminder));
+            text.Append(
+                "actionSemantics: set strategic targets only; hiring and " +
+                "reallocation use the existing simulation and may take effect " +
+                "on the next ManualAgentController decision cycle.");
+        }
 
         observation = text.ToString();
         error = null;
@@ -457,6 +602,7 @@ public class AgentTextInterface : MonoBehaviour
             treasury == null ||
             stockpile == null ||
             manualController == null ||
+            decisionScheduler == null ||
             wonder == null)
         {
             error = "Required simulation references are not fully configured.";
@@ -469,56 +615,31 @@ public class AgentTextInterface : MonoBehaviour
             return false;
         }
 
-        if (citizens == null || workplaceBindings == null)
+        bool requireUniqueCitizenIds =
+            decisionScheduler.ControlMode == AgentControlMode.Api;
+
+        if (!TryGetConfiguredObjects(
+            requireUniqueCitizenIds,
+            out _,
+            out _,
+            out string[] workplaceIds,
+            out Workplace[] configuredWorkplaces,
+            out error))
         {
-            error = "Citizens and workplace bindings must be configured.";
             return false;
         }
 
-        HashSet<CitizenEmployment> configuredCitizens =
-            new HashSet<CitizenEmployment>();
-
-        foreach (CitizenEmployment citizen in citizens)
+        for (int i = 0; i < workplaceIds.Length; i++)
         {
-            if (citizen == null || !configuredCitizens.Add(citizen))
-            {
-                error = "Configured citizens must be non-null and unique.";
-                return false;
-            }
-        }
+            bindingIndices.Add(workplaceIds[i], i);
 
-        HashSet<Workplace> configuredWorkplaces = new HashSet<Workplace>();
-
-        for (int i = 0; i < workplaceBindings.Length; i++)
-        {
-            AgentWorkplaceBinding binding = workplaceBindings[i];
-
-            if (binding == null ||
-                string.IsNullOrWhiteSpace(binding.Id) ||
-                binding.Workplace == null)
-            {
-                error = "Every workplace binding needs a non-empty ID and Workplace.";
-                return false;
-            }
-
-            if (!bindingIndices.TryAdd(binding.Id, i))
-            {
-                error = $"Duplicate configured workplace ID: {binding.Id}.";
-                return false;
-            }
-
-            if (!configuredWorkplaces.Add(binding.Workplace))
-            {
-                error = "Each configured Workplace may have only one stable ID.";
-                return false;
-            }
-
-            if (!manualController.TryGetDesiredWorkers(
-                binding.Workplace,
-                out _))
+            if (decisionScheduler.ControlMode == AgentControlMode.Manual &&
+                !manualController.TryGetDesiredWorkers(
+                    configuredWorkplaces[i],
+                    out _))
             {
                 error =
-                    $"ManualAgentController has no allocation for {binding.Id}.";
+                    $"ManualAgentController has no allocation for {workplaceIds[i]}.";
                 return false;
             }
         }

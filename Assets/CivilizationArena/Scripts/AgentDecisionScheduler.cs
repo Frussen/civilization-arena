@@ -22,6 +22,8 @@ public class AgentDecisionScheduler : MonoBehaviour
 
     public AgentControlMode ControlMode => controlMode;
     public bool AwaitingAction => awaitingAction;
+    public bool IsMatchEnded =>
+        matchController == null || matchController.IsEnded;
     public int SimulatedMinutesUntilNextDecision =>
         simulatedMinutesUntilNextDecision;
     public int DecisionsRequested => decisionsRequested;
@@ -34,6 +36,7 @@ public class AgentDecisionScheduler : MonoBehaviour
         simulatedMinutesUntilNextDecision = SafeDecisionInterval;
         firstUpdatePending = true;
         activeControlMode = controlMode;
+        UpdateManualControllerExecution();
     }
 
     private void OnEnable()
@@ -64,6 +67,7 @@ public class AgentDecisionScheduler : MonoBehaviour
         {
             firstUpdatePending = false;
             activeControlMode = controlMode;
+            UpdateManualControllerExecution();
 
             if (controlMode == AgentControlMode.Api &&
                 requestDecisionOnStart)
@@ -136,17 +140,17 @@ public class AgentDecisionScheduler : MonoBehaviour
             textInterface.LatestObservation);
     }
 
-    private void HandleActionApplied()
+    public bool TryCompletePendingDecision()
     {
-        if (!awaitingAction)
+        if (controlMode != AgentControlMode.Api || !awaitingAction)
         {
-            return;
+            return false;
         }
 
         if (matchController == null || matchController.IsEnded)
         {
             awaitingAction = false;
-            return;
+            return false;
         }
 
         awaitingAction = false;
@@ -154,11 +158,18 @@ public class AgentDecisionScheduler : MonoBehaviour
         Time.timeScale = timeScaleBeforePause > 0f
             ? timeScaleBeforePause
             : 1f;
+        return true;
+    }
+
+    private void HandleActionApplied()
+    {
+        TryCompletePendingDecision();
     }
 
     private void HandleControlModeChanged()
     {
         activeControlMode = controlMode;
+        UpdateManualControllerExecution();
 
         if (controlMode == AgentControlMode.Manual)
         {
@@ -182,6 +193,20 @@ public class AgentDecisionScheduler : MonoBehaviour
         awaitingAction = false;
         simulatedMinutesUntilNextDecision = SafeDecisionInterval;
         RequestDecision();
+    }
+
+    private void UpdateManualControllerExecution()
+    {
+        ManualAgentController manualController = textInterface != null
+            ? textInterface.ManualController
+            : null;
+
+        if (manualController != null)
+        {
+            manualController.SetExecutionEnabled(
+                controlMode == AgentControlMode.Manual,
+                this);
+        }
     }
 
     private int SafeDecisionInterval => Mathf.Max(1, decisionIntervalMinutes);

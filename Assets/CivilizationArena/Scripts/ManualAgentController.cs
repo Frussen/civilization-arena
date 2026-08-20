@@ -27,9 +27,20 @@ public class ManualAgentController : MonoBehaviour
     [SerializeField] private int decisionIntervalMinutes = 30;
 
     private int accumulatedMinutes;
+    private bool executionEnabled = true;
+    private AgentDecisionScheduler controlModeAuthority;
 
     public AgentTreasury Employer => employer;
     public int MaximumOfferWage => maximumOfferWage;
+    public bool ExecutionEnabled => executionEnabled;
+
+    internal void SetExecutionEnabled(
+        bool value,
+        AgentDecisionScheduler authority)
+    {
+        executionEnabled = value;
+        controlModeAuthority = authority;
+    }
 
     public bool SetMaximumOfferWage(int value)
     {
@@ -76,6 +87,13 @@ public class ManualAgentController : MonoBehaviour
 
     private void Update()
     {
+        if (!executionEnabled ||
+            (controlModeAuthority != null &&
+             controlModeAuthority.ControlMode != AgentControlMode.Manual))
+        {
+            return;
+        }
+
         int simulatedMinutes = clock.MinutesAdvancedThisFrame;
         if (simulatedMinutes <= 0)
         {

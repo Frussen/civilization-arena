@@ -517,6 +517,7 @@ GameObject:
   - component: {fileID: 361394904}
   - component: {fileID: 361394905}
   - component: {fileID: 361394906}
+  - component: {fileID: 361394907}
   m_Layer: 0
   m_Name: Agent_A
   m_TagString: Untagged
@@ -539,7 +540,9 @@ MonoBehaviour:
   clock: {fileID: 2071210469}
   initialGold: 100
   goldIncomePerHour: 50
+  payrollCoverageHours: 10
   currentGold: 0
+  currentPayrollPerHour: 0
 --- !u!4 &361394901
 Transform:
   m_ObjectHideFlags: 0
@@ -619,6 +622,7 @@ MonoBehaviour:
   treasury: {fileID: 361394900}
   stockpile: {fileID: 361394903}
   manualController: {fileID: 361394902}
+  decisionScheduler: {fileID: 361394905}
   wonder: {fileID: 1896526194}
   citizens:
   - {fileID: 139201371}
@@ -676,6 +680,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OpenAiAgentController
   decisionScheduler: {fileID: 361394905}
   textInterface: {fileID: 361394904}
+  offerExecutor: {fileID: 361394907}
   matchController: {fileID: 2071210471}
   model: gpt-5.6
   apiKeyEnvironmentVariable: OPENAI_API_KEY
@@ -706,6 +711,23 @@ MonoBehaviour:
   latestModelAction: 
   latestApiStatus: 
   latestApiError: 
+--- !u!114 &361394907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361394899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0dbdfad4dda46c3a2c35f59a3bd6ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentOfferExecutor
+  employer: {fileID: 361394900}
+  textInterface: {fileID: 361394904}
+  decisionScheduler: {fileID: 361394905}
+  latestActionJson: 
+  latestExecutionResult: 
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -4006,6 +4028,7 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 2071210470}
+  - {fileID: 971185526}
   - {fileID: 1743301057}
   - {fileID: 1007328705}
   - {fileID: 1674926888}
@@ -4013,4 +4036,3 @@ SceneRoots:
   - {fileID: 1910713170}
   - {fileID: 1896526196}
   - {fileID: 361394901}
-  - {fileID: 971185526}

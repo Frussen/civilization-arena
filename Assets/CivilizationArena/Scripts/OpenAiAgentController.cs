@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -13,6 +12,7 @@ public class OpenAiAgentController : MonoBehaviour
 
     [SerializeField] private AgentDecisionScheduler decisionScheduler;
     [SerializeField] private AgentTextInterface textInterface;
+    [SerializeField] private AgentOfferExecutor offerExecutor;
     [SerializeField] private MatchController matchController;
 
     [SerializeField] private string model = "gpt-5.6";
@@ -23,19 +23,19 @@ public class OpenAiAgentController : MonoBehaviour
         "You are the strategic controller of an agent in Civilization Arena.\n" +
         "Your objective is to complete your Wonder successfully.\n" +
         "You receive authoritative textual observations of the simulation.\n" +
-        "Choose only the strategic controls allowed by the provided action schema.\n" +
-        "Plan economically, account for wages, resource production, worker shifts, " +
-        "reservation wages, and Wonder construction.\n" +
-        "Maximum Offer Wage is a hard ceiling, not the wage automatically paid " +
-        "to everyone.\n" +
-        "Unemployed citizens are hired at their reservation wage when it is " +
-        "within that ceiling.\n" +
-        "Reassigning an already-employed citizen requires an offer of at least " +
-        "current wage + 1.\n" +
-        "A desired allocation can remain unapplied when Maximum Offer Wage is " +
-        "too low.\n" +
-        "Inspect actual allocations in later observations to verify whether " +
-        "requested changes were executed.\n" +
+        "Make explicit employment offers to individual citizens. Each offer " +
+        "specifies citizen, Workplace, and wage.\n" +
+        "You may make zero or more offers per decision. Citizens decide whether " +
+        "to accept according to the simulation rules.\n" +
+        "An employed citizen requires a strictly higher wage for a new offer. " +
+        "An unemployed citizen requires at least their reservation wage.\n" +
+        "Every new or renegotiated contract must satisfy the employer's payroll " +
+        "coverage requirement.\n" +
+        "Offers are processed sequentially in the supplied order, and rejection " +
+        "is a possible gameplay outcome.\n" +
+        "Consider current time, work shift, activity, wage, reservation wage, " +
+        "current employer and Workplace, resources, payroll, and Wonder " +
+        "requirements.\n" +
         "Do not invent actions that are not available.\n" +
         "Return the strategic action required by the supplied schema.\n" +
         "strategyNote must contain only a short high-level strategy summary.";
@@ -166,6 +166,12 @@ public class OpenAiAgentController : MonoBehaviour
             return false;
         }
 
+        if (offerExecutor == null)
+        {
+            ReportFailure("AgentOfferExecutor is not configured.");
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(observation))
         {
             ReportFailure("The scheduled observation is empty.");
@@ -194,7 +200,12 @@ public class OpenAiAgentController : MonoBehaviour
             return false;
         }
 
-        if (!TryGetWorkplaceIds(out string[] workplaceIds, out string error))
+        if (!textInterface.TryGetOfferConfiguration(
+            out string[] citizenIds,
+            out _,
+            out string[] workplaceIds,
+            out _,
+            out string error))
         {
             ReportFailure(error);
             return false;
@@ -202,6 +213,7 @@ public class OpenAiAgentController : MonoBehaviour
 
         OpenAiResponsesRequest requestBody = BuildRequest(
             observation,
+            citizenIds,
             workplaceIds);
 
         string requestJson = JsonUtility.ToJson(requestBody);
@@ -346,71 +358,47 @@ public class OpenAiAgentController : MonoBehaviour
             return;
         }
 
-        if (!textInterface.TryApplyActionJson(actionJson))
+        if (!offerExecutor.TryExecuteActionJson(actionJson))
         {
             ReportFailure(
                 $"Decision {decisionNumber}: model action rejected. " +
-                textInterface.LatestActionResult);
+                offerExecutor.LatestExecutionResult);
             return;
         }
 
         requestInFlight = false;
         latestApiError = string.Empty;
         latestApiStatus =
-            $"Decision {decisionNumber}: action accepted.";
-    }
-
-    private bool TryGetWorkplaceIds(
-        out string[] workplaceIds,
-        out string error)
-    {
-        workplaceIds = textInterface.GetConfiguredWorkplaceIds();
-
-        if (workplaceIds.Length == 0)
-        {
-            error = "No workplace IDs are configured in AgentTextInterface.";
-            return false;
-        }
-
-        HashSet<string> uniqueIds = new HashSet<string>(
-            StringComparer.Ordinal);
-
-        foreach (string workplaceId in workplaceIds)
-        {
-            if (string.IsNullOrWhiteSpace(workplaceId) ||
-                !uniqueIds.Add(workplaceId))
-            {
-                error =
-                    "AgentTextInterface workplace IDs must be non-empty and unique.";
-                return false;
-            }
-        }
-
-        error = null;
-        return true;
+            $"Decision {decisionNumber}: action executed.";
     }
 
     private OpenAiResponsesRequest BuildRequest(
         string observation,
+        string[] citizenIds,
         string[] workplaceIds)
     {
-        AllocationObjectSchema allocationItem = new AllocationObjectSchema
+        OfferObjectSchema offerItem = new OfferObjectSchema
         {
             type = "object",
-            properties = new AllocationSchemaProperties
+            properties = new OfferSchemaProperties
             {
+                citizenId = new EnumStringSchema
+                {
+                    type = "string",
+                    @enum = citizenIds
+                },
                 workplaceId = new EnumStringSchema
                 {
                     type = "string",
                     @enum = workplaceIds
                 },
-                desiredWorkers = new IntegerSchema
+                wage = new IntegerSchema
                 {
                     type = "integer",
-                    minimum = 0
+                    minimum = 1
                 }
             },
-            required = new[] { "workplaceId", "desiredWorkers" },
+            required = new[] { "citizenId", "workplaceId", "wage" },
             additionalProperties = false
         };
 
@@ -419,17 +407,12 @@ public class OpenAiAgentController : MonoBehaviour
             type = "object",
             properties = new ActionSchemaProperties
             {
-                maximumOfferWage = new IntegerSchema
-                {
-                    type = "integer",
-                    minimum = 1
-                },
-                allocations = new AllocationArraySchema
+                offers = new OfferArraySchema
                 {
                     type = "array",
-                    items = allocationItem,
-                    minItems = workplaceIds.Length,
-                    maxItems = workplaceIds.Length
+                    items = offerItem,
+                    minItems = 0,
+                    maxItems = citizenIds.Length
                 },
                 strategyNote = new StringSchema
                 {
@@ -438,8 +421,7 @@ public class OpenAiAgentController : MonoBehaviour
             },
             required = new[]
             {
-                "maximumOfferWage",
-                "allocations",
+                "offers",
                 "strategyNote"
             },
             additionalProperties = false
@@ -590,34 +572,34 @@ public class OpenAiAgentController : MonoBehaviour
     [Serializable]
     private class ActionSchemaProperties
     {
-        public IntegerSchema maximumOfferWage;
-        public AllocationArraySchema allocations;
+        public OfferArraySchema offers;
         public StringSchema strategyNote;
     }
 
     [Serializable]
-    private class AllocationArraySchema
+    private class OfferArraySchema
     {
         public string type;
-        public AllocationObjectSchema items;
+        public OfferObjectSchema items;
         public int minItems;
         public int maxItems;
     }
 
     [Serializable]
-    private class AllocationObjectSchema
+    private class OfferObjectSchema
     {
         public string type;
-        public AllocationSchemaProperties properties;
+        public OfferSchemaProperties properties;
         public string[] required;
         public bool additionalProperties;
     }
 
     [Serializable]
-    private class AllocationSchemaProperties
+    private class OfferSchemaProperties
     {
+        public EnumStringSchema citizenId;
         public EnumStringSchema workplaceId;
-        public IntegerSchema desiredWorkers;
+        public IntegerSchema wage;
     }
 
     [Serializable]
