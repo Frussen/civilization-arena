@@ -518,6 +518,7 @@ GameObject:
   - component: {fileID: 361394905}
   - component: {fileID: 361394906}
   - component: {fileID: 361394907}
+  - component: {fileID: 361394908}
   m_Layer: 0
   m_Name: Agent_A
   m_TagString: Untagged
@@ -682,35 +683,12 @@ MonoBehaviour:
   textInterface: {fileID: 361394904}
   offerExecutor: {fileID: 361394907}
   matchController: {fileID: 2071210471}
-  model: gpt-5.6
-  apiKeyEnvironmentVariable: OPENAI_API_KEY
-  systemInstructions: 'You are the strategic controller of an agent in Civilization
-    Arena.
-
-    Your objective is to complete your Wonder successfully.
-
-    You
-    receive authoritative textual observations of the simulation.
-
-    Choose only
-    the strategic controls allowed by the provided action schema.
-
-    Plan economically,
-    account for wages, resource production, worker shifts, reservation wages, and
-    Wonder construction.
-
-    Do not invent actions that are not available.
-
-    Return
-    the strategic action required by the supplied schema.
-
-    strategyNote must
-    contain only a short high-level strategy summary.'
+  provider: {fileID: 361394908}
   requestInFlight: 0
   lastDecisionNumberRequested: 0
   latestModelAction: 
-  latestApiStatus: 
-  latestApiError: 
+  latestRequestStatus: 
+  latestRequestError: 
 --- !u!114 &361394907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -728,6 +706,57 @@ MonoBehaviour:
   decisionScheduler: {fileID: 361394905}
   latestActionJson: 
   latestExecutionResult: 
+--- !u!114 &361394908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 361394899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1595d53f2d4dc4badaf843b04c5bdd24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenAiLlmProvider
+  model: gpt-5.6
+  apiKeyEnvironmentVariable: OPENAI_API_KEY
+  systemInstructions: 'You are the strategic controller of an agent in Civilization
+    Arena.
+
+    Your objective is to complete your Wonder successfully.
+
+    You
+    receive authoritative textual observations of the simulation.
+
+    Make explicit
+    employment offers to individual citizens. Each offer specifies citizen, Workplace,
+    and wage.
+
+    You may make zero or more offers per decision. Citizens decide
+    whether to accept according to the simulation rules.
+
+    An employed citizen
+    requires a strictly higher wage for a new offer. An unemployed citizen requires
+    at least their reservation wage.
+
+    Every new or renegotiated contract must
+    satisfy the employer''s payroll coverage requirement.
+
+    Offers are processed
+    sequentially in the supplied order, and rejection is a possible gameplay outcome.
+
+    Consider
+    current time, work shift, activity, wage, reservation wage, current employer
+    and Workplace, resources, payroll, and Wonder requirements.
+
+    Do not invent
+    actions that are not available.
+
+    Return the strategic action required by
+    the supplied schema.
+
+    strategyNote must contain only a short high-level strategy
+    summary.'
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0

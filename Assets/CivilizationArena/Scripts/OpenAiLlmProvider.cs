@@ -4,16 +4,11 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class OpenAiAgentController : MonoBehaviour
+public class OpenAiLlmProvider : LlmProviderBehaviour
 {
     private const string ResponsesEndpoint =
         "https://api.openai.com/v1/responses";
     private const int RequestTimeoutSeconds = 180;
-
-    [SerializeField] private AgentDecisionScheduler decisionScheduler;
-    [SerializeField] private AgentTextInterface textInterface;
-    [SerializeField] private AgentOfferExecutor offerExecutor;
-    [SerializeField] private MatchController matchController;
 
     [SerializeField] private string model = "gpt-5.6";
     [SerializeField] private string apiKeyEnvironmentVariable =
@@ -40,154 +35,39 @@ public class OpenAiAgentController : MonoBehaviour
         "Return the strategic action required by the supplied schema.\n" +
         "strategyNote must contain only a short high-level strategy summary.";
 
-    [SerializeField] private bool requestInFlight;
-    [SerializeField] private int lastDecisionNumberRequested;
-    [TextArea(8, 20)]
-    [SerializeField] private string latestModelAction;
-    [TextArea(2, 5)]
-    [SerializeField] private string latestApiStatus;
-    [TextArea(2, 8)]
-    [SerializeField] private string latestApiError;
+    private Coroutine activeRequest;
+    private int requestVersion;
 
-    public bool RequestInFlight => requestInFlight;
-    public int LastDecisionNumberRequested => lastDecisionNumberRequested;
-    public string LatestModelAction => latestModelAction;
-    public string LatestApiStatus => latestApiStatus;
-    public string LatestApiError => latestApiError;
-
-    private void OnEnable()
+    public override void RequestAction(
+        string observation,
+        string[] citizenIds,
+        string[] workplaceIds,
+        Action<LlmProviderResult> onCompleted)
     {
-        if (decisionScheduler != null)
+        if (onCompleted == null)
         {
-            decisionScheduler.DecisionRequested += HandleDecisionRequested;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (decisionScheduler != null)
-        {
-            decisionScheduler.DecisionRequested -= HandleDecisionRequested;
+            throw new ArgumentNullException(nameof(onCompleted));
         }
 
-        if (requestInFlight)
+        if (activeRequest != null)
         {
-            StopAllCoroutines();
-            requestInFlight = false;
-            latestApiStatus =
-                "OpenAI request cancelled because the controller was disabled.";
-        }
-    }
-
-    private void Update()
-    {
-        if (requestInFlight && !IsApiMode)
-        {
-            StopAllCoroutines();
-            requestInFlight = false;
-            latestApiStatus =
-                "OpenAI request discarded because control mode is Manual.";
-            latestApiError = string.Empty;
-        }
-    }
-
-    private void HandleDecisionRequested(
-        int decisionNumber,
-        string observation)
-    {
-        TryStartRequest(decisionNumber, observation);
-    }
-
-    [ContextMenu("Retry Current Decision")]
-    private void RetryCurrentDecision()
-    {
-        if (!IsApiMode)
-        {
+            onCompleted(LlmProviderResult.Failed(
+                "An OpenAI request is already in flight."));
             return;
-        }
-
-        if (!Application.isPlaying)
-        {
-            ReportFailure("Retry Current Decision is available only during Play Mode.");
-            return;
-        }
-
-        if (decisionScheduler == null || !decisionScheduler.AwaitingAction)
-        {
-            ReportFailure("There is no decision currently awaiting an action.");
-            return;
-        }
-
-        if (requestInFlight)
-        {
-            latestApiError = "An OpenAI request is already in flight.";
-            Debug.LogWarning(latestApiError, this);
-            return;
-        }
-
-        if (matchController == null || matchController.IsEnded)
-        {
-            ReportFailure("The match has ended or MatchController is not configured.");
-            return;
-        }
-
-        if (textInterface == null ||
-            string.IsNullOrWhiteSpace(textInterface.LatestObservation))
-        {
-            ReportFailure("No current observation is available for retry.");
-            return;
-        }
-
-        TryStartRequest(
-            decisionScheduler.DecisionsRequested,
-            textInterface.LatestObservation);
-    }
-
-    private bool TryStartRequest(int decisionNumber, string observation)
-    {
-        if (!IsApiMode || requestInFlight)
-        {
-            return false;
-        }
-
-        lastDecisionNumberRequested = decisionNumber;
-        latestModelAction = string.Empty;
-        latestApiError = string.Empty;
-
-        if (matchController == null || matchController.IsEnded)
-        {
-            ReportFailure("The match has ended or MatchController is not configured.");
-            return false;
-        }
-
-        if (textInterface == null)
-        {
-            ReportFailure("AgentTextInterface is not configured.");
-            return false;
-        }
-
-        if (offerExecutor == null)
-        {
-            ReportFailure("AgentOfferExecutor is not configured.");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(observation))
-        {
-            ReportFailure("The scheduled observation is empty.");
-            return false;
         }
 
         if (string.IsNullOrWhiteSpace(model))
         {
-            ReportFailure("The OpenAI model is not configured.");
-            return false;
+            onCompleted(LlmProviderResult.Failed(
+                "The OpenAI model is not configured."));
+            return;
         }
 
         if (string.IsNullOrWhiteSpace(apiKeyEnvironmentVariable))
         {
-            ReportFailure("The API key environment variable name is empty.");
-            return false;
+            onCompleted(LlmProviderResult.Failed(
+                "The API key environment variable name is empty."));
+            return;
         }
 
         string apiKey = Environment.GetEnvironmentVariable(
@@ -195,20 +75,10 @@ public class OpenAiAgentController : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            ReportFailure(
-                $"API key environment variable '{apiKeyEnvironmentVariable}' is not set.");
-            return false;
-        }
-
-        if (!textInterface.TryGetOfferConfiguration(
-            out string[] citizenIds,
-            out _,
-            out string[] workplaceIds,
-            out _,
-            out string error))
-        {
-            ReportFailure(error);
-            return false;
+            onCompleted(LlmProviderResult.Failed(
+                $"API key environment variable " +
+                $"'{apiKeyEnvironmentVariable}' is not set."));
+            return;
         }
 
         OpenAiResponsesRequest requestBody = BuildRequest(
@@ -217,23 +87,30 @@ public class OpenAiAgentController : MonoBehaviour
             workplaceIds);
 
         string requestJson = JsonUtility.ToJson(requestBody);
-
-        requestInFlight = true;
-        latestApiStatus =
-            $"Decision {decisionNumber}: OpenAI request in flight.";
-
-        StartCoroutine(SendRequest(
-            decisionNumber,
+        int currentRequestVersion = ++requestVersion;
+        activeRequest = StartCoroutine(SendRequest(
+            currentRequestVersion,
             apiKey,
-            requestJson));
+            requestJson,
+            onCompleted));
+    }
 
-        return true;
+    public override void CancelRequest()
+    {
+        requestVersion++;
+
+        if (activeRequest != null)
+        {
+            StopCoroutine(activeRequest);
+            activeRequest = null;
+        }
     }
 
     private IEnumerator SendRequest(
-        int decisionNumber,
+        int currentRequestVersion,
         string apiKey,
-        string requestJson)
+        string requestJson,
+        Action<LlmProviderResult> onCompleted)
     {
         using (UnityWebRequest request = new UnityWebRequest(
             ResponsesEndpoint,
@@ -248,19 +125,8 @@ public class OpenAiAgentController : MonoBehaviour
 
             yield return request.SendWebRequest();
 
-            if (!IsApiMode)
+            if (currentRequestVersion != requestVersion)
             {
-                requestInFlight = false;
-                latestApiStatus =
-                    "OpenAI response discarded because control mode is Manual.";
-                latestApiError = string.Empty;
-                yield break;
-            }
-
-            if (matchController == null || matchController.IsEnded)
-            {
-                ReportFailure(
-                    $"Decision {decisionNumber}: response discarded because the match ended.");
                 yield break;
             }
 
@@ -273,21 +139,36 @@ public class OpenAiAgentController : MonoBehaviour
                     ? apiError
                     : request.error;
 
-                ReportFailure(
-                    $"Decision {decisionNumber}: HTTP {request.responseCode} " +
-                    $"request failed: {detail}");
+                CompleteRequest(
+                    currentRequestVersion,
+                    onCompleted,
+                    LlmProviderResult.Failed(
+                        $"HTTP {request.responseCode} request failed: {detail}"));
                 yield break;
             }
 
-            HandleSuccessfulHttpResponse(
-                decisionNumber,
-                request.downloadHandler?.text);
+            CompleteRequest(
+                currentRequestVersion,
+                onCompleted,
+                ParseResponse(request.downloadHandler?.text));
         }
     }
 
-    private void HandleSuccessfulHttpResponse(
-        int decisionNumber,
-        string responseJson)
+    private void CompleteRequest(
+        int completedRequestVersion,
+        Action<LlmProviderResult> onCompleted,
+        LlmProviderResult result)
+    {
+        if (completedRequestVersion != requestVersion)
+        {
+            return;
+        }
+
+        activeRequest = null;
+        onCompleted(result);
+    }
+
+    private static LlmProviderResult ParseResponse(string responseJson)
     {
         OpenAiResponsesResponse response;
 
@@ -298,16 +179,12 @@ public class OpenAiAgentController : MonoBehaviour
         }
         catch (Exception)
         {
-            ReportFailure(
-                $"Decision {decisionNumber}: malformed OpenAI response.");
-            return;
+            return LlmProviderResult.Failed("Malformed OpenAI response.");
         }
 
         if (response == null)
         {
-            ReportFailure(
-                $"Decision {decisionNumber}: empty OpenAI response.");
-            return;
+            return LlmProviderResult.Failed("Empty OpenAI response.");
         }
 
         if (!string.Equals(
@@ -320,56 +197,24 @@ public class OpenAiAgentController : MonoBehaviour
                 ? response.error.message
                 : $"response status was '{response.status ?? "missing"}'";
 
-            ReportFailure($"Decision {decisionNumber}: {detail}.");
-            return;
+            return LlmProviderResult.Failed(detail + ".");
         }
 
         string refusal = FindRefusal(response);
         if (!string.IsNullOrWhiteSpace(refusal))
         {
-            ReportFailure(
-                $"Decision {decisionNumber}: model refused the request: {refusal}");
-            return;
+            return LlmProviderResult.Failed(
+                $"Model refused the request: {refusal}");
         }
 
         string actionJson = FindOutputText(response);
         if (string.IsNullOrWhiteSpace(actionJson))
         {
-            ReportFailure(
-                $"Decision {decisionNumber}: completed response had no output_text.");
-            return;
+            return LlmProviderResult.Failed(
+                "Completed response had no output_text.");
         }
 
-        latestModelAction = actionJson;
-
-        if (!IsApiMode)
-        {
-            requestInFlight = false;
-            latestApiStatus =
-                "OpenAI action discarded because control mode is Manual.";
-            latestApiError = string.Empty;
-            return;
-        }
-
-        if (matchController == null || matchController.IsEnded)
-        {
-            ReportFailure(
-                $"Decision {decisionNumber}: action discarded because the match ended.");
-            return;
-        }
-
-        if (!offerExecutor.TryExecuteActionJson(actionJson))
-        {
-            ReportFailure(
-                $"Decision {decisionNumber}: model action rejected. " +
-                offerExecutor.LatestExecutionResult);
-            return;
-        }
-
-        requestInFlight = false;
-        latestApiError = string.Empty;
-        latestApiStatus =
-            $"Decision {decisionNumber}: action executed.";
+        return LlmProviderResult.Succeeded(actionJson);
     }
 
     private OpenAiResponsesRequest BuildRequest(
@@ -523,18 +368,6 @@ public class OpenAiAgentController : MonoBehaviour
             return null;
         }
     }
-
-    private void ReportFailure(string message)
-    {
-        requestInFlight = false;
-        latestApiStatus = "OpenAI decision failed.";
-        latestApiError = message;
-        Debug.LogError(message, this);
-    }
-
-    private bool IsApiMode =>
-        decisionScheduler != null &&
-        decisionScheduler.ControlMode == AgentControlMode.Api;
 
     [Serializable]
     private class OpenAiResponsesRequest
