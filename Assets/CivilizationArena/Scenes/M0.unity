@@ -287,6 +287,74 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7eefb81a9a1d8427fa4d1bf95615ae5f, type: 3}
+--- !u!1 &195692858
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 195692861}
+  - component: {fileID: 195692860}
+  - component: {fileID: 195692859}
+  m_Layer: 0
+  m_Name: Wonder_B
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &195692859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195692858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d49dc89c69de490fa9e72964b000522, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WonderConstruction
+  owner: {fileID: 424630248}
+  stoneRequired: 200
+  woodRequired: 300
+  laborHoursRequired: 10
+  completedVisual: {fileID: 907783851}
+  laborHoursCompleted: 0
+  completed: 0
+--- !u!114 &195692860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195692858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab188d88382db4710af055e286d3fd98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Workplace
+  resourceType: 0
+  productionPerHour: 10
+  workRadius: 3.5
+--- !u!4 &195692861
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195692858}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.51628, y: 0, z: 7.22}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 907783852}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &296539615
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -661,7 +729,7 @@ MonoBehaviour:
   worldClock: {fileID: 2071210469}
   textInterface: {fileID: 361394904}
   matchController: {fileID: 2071210471}
-  controlMode: 1
+  controlMode: 0
   decisionIntervalMinutes: 360
   requestDecisionOnStart: 1
   awaitingAction: 0
@@ -884,10 +952,339 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &424630240
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 424630249}
+  - component: {fileID: 424630248}
+  - component: {fileID: 424630247}
+  - component: {fileID: 424630246}
+  - component: {fileID: 424630245}
+  - component: {fileID: 424630244}
+  - component: {fileID: 424630243}
+  - component: {fileID: 424630242}
+  - component: {fileID: 424630241}
+  m_Layer: 0
+  m_Name: Agent_B
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &424630241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1595d53f2d4dc4badaf843b04c5bdd24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenAiLlmProvider
+  model: gpt-5.6
+  apiKeyEnvironmentVariable: OPENAI_API_KEY
+  systemInstructions: 'You are the strategic controller of an agent in Civilization
+    Arena.
+
+    Your objective is to complete your Wonder successfully.
+
+    You
+    receive authoritative textual observations of the simulation.
+
+    Make explicit
+    employment offers to individual citizens. Each offer specifies citizen, Workplace,
+    and wage.
+
+    You may make zero or more offers per decision. Citizens decide
+    whether to accept according to the simulation rules.
+
+    An employed citizen
+    requires a strictly higher wage for a new offer. An unemployed citizen requires
+    at least their reservation wage.
+
+    Every new or renegotiated contract must
+    satisfy the employer''s payroll coverage requirement.
+
+    Offers are processed
+    sequentially in the supplied order, and rejection is a possible gameplay outcome.
+
+    Consider
+    current time, work shift, activity, wage, reservation wage, current employer
+    and Workplace, resources, payroll, and Wonder requirements.
+
+    Do not invent
+    actions that are not available.
+
+    Return the strategic action required by
+    the supplied schema.
+
+    strategyNote must contain only a short high-level strategy
+    summary.'
+--- !u!114 &424630242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0dbdfad4dda46c3a2c35f59a3bd6ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentOfferExecutor
+  employer: {fileID: 424630248}
+  textInterface: {fileID: 424630245}
+  decisionScheduler: {fileID: 424630244}
+  latestActionJson: 
+  latestExecutionResult: 
+--- !u!114 &424630243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e48259c984bf94baba86ae5ddb164cdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenAiAgentController
+  decisionScheduler: {fileID: 424630244}
+  textInterface: {fileID: 424630245}
+  offerExecutor: {fileID: 424630242}
+  matchController: {fileID: 2071210471}
+  provider: {fileID: 424630241}
+  requestInFlight: 0
+  lastDecisionNumberRequested: 0
+  latestModelAction: 
+  latestRequestStatus: 
+  latestRequestError: 
+--- !u!114 &424630244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddd88a1a50a69456e866482bb2502320, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentDecisionScheduler
+  worldClock: {fileID: 2071210469}
+  textInterface: {fileID: 424630245}
+  matchController: {fileID: 2071210471}
+  controlMode: 1
+  decisionIntervalMinutes: 360
+  requestDecisionOnStart: 1
+  awaitingAction: 0
+  simulatedMinutesUntilNextDecision: 0
+  decisionsRequested: 0
+--- !u!114 &424630245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7951e628409454960b1787e850047966, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentTextInterface
+  clock: {fileID: 2071210469}
+  treasury: {fileID: 424630248}
+  stockpile: {fileID: 424630246}
+  manualController: {fileID: 424630247}
+  decisionScheduler: {fileID: 424630244}
+  wonder: {fileID: 1896526194}
+  citizens:
+  - {fileID: 139201371}
+  - {fileID: 2042153801}
+  - {fileID: 1126340299}
+  - {fileID: 1249443569}
+  - {fileID: 1642702458}
+  - {fileID: 780165622}
+  - {fileID: 637926093}
+  - {fileID: 1229737670}
+  - {fileID: 1980183594}
+  - {fileID: 1608182527}
+  workplaceBindings:
+  - id: quarry
+    workplace: {fileID: 1007328706}
+  - id: lumber_camp
+    workplace: {fileID: 1674926887}
+  - id: wonder
+    workplace: {fileID: 1896526195}
+  latestObservation: 
+  actionJson: 
+  latestActionResult: 
+--- !u!114 &424630246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0fd7cd72d2e84450b772c3df086f955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentResourceStockpile
+  stone: 0
+  wood: 0
+--- !u!114 &424630247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 057951bc40a26432f825491934502069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ManualAgentController
+  clock: {fileID: 2071210469}
+  employer: {fileID: 424630248}
+  citizens:
+  - {fileID: 139201371}
+  - {fileID: 2042153801}
+  - {fileID: 1126340299}
+  - {fileID: 1249443569}
+  - {fileID: 1642702458}
+  - {fileID: 780165622}
+  - {fileID: 637926093}
+  - {fileID: 1229737670}
+  - {fileID: 1980183594}
+  - {fileID: 1608182527}
+  workplaceAllocations:
+  - workplace: {fileID: 1007328706}
+    desiredWorkers: 0
+  - workplace: {fileID: 1674926887}
+    desiredWorkers: 0
+  - workplace: {fileID: 1896526195}
+    desiredWorkers: 0
+  maximumOfferWage: 5
+  decisionIntervalMinutes: 30
+--- !u!114 &424630248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2fcf4b80627d4d4cb42a0be1f6c69cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgentTreasury
+  clock: {fileID: 2071210469}
+  initialGold: 100
+  goldIncomePerHour: 50
+  payrollCoverageHours: 10
+  currentGold: 0
+  currentPayrollPerHour: 0
+--- !u!4 &424630249
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424630240}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 100, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &482077953 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c9f03a08a85a34bed86ab1a4ba55d802, type: 3}
   m_PrefabInstance: {fileID: 1076552311}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &487789557
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 907783852}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 305
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 277
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 338
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7072302
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7069834
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -89.98
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+      propertyPath: m_Name
+      value: Temple_SecondAge_Level2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+--- !u!4 &487789558 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
+  m_PrefabInstance: {fileID: 487789557}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &503293096 stripped
 Transform:
@@ -904,19 +1301,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalScale.x
-      value: 305.03427
+      value: 305
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalScale.y
-      value: 277.01663
+      value: 277
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalScale.z
-      value: 338.05997
+      value: 338
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0504601
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalPosition.y
@@ -924,7 +1321,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.02
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: c3ddb7216e89c4d0fb44db12ba6c5d33, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1578,6 +1975,38 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: db0772ff65763496e9145e16fb862d23, type: 3}
+--- !u!1 &907783851
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 907783852}
+  m_Layer: 0
+  m_Name: WonderVisual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &907783852
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 907783851}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0.00001001358}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 487789558}
+  m_Father: {fileID: 195692861}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &913686654
 GameObject:
   m_ObjectHideFlags: 0
@@ -3992,6 +4421,7 @@ GameObject:
   - component: {fileID: 2071210470}
   - component: {fileID: 2071210469}
   - component: {fileID: 2071210471}
+  - component: {fileID: 2071210472}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -4049,6 +4479,31 @@ MonoBehaviour:
   finalHour: 0
   finalMinute: 0
   latestMatchResult: 
+--- !u!114 &2071210472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96d625c4dd85b4f23a5095bf93647907, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaRoundSnapshotBuilder
+  sideATreasury: {fileID: 361394900}
+  sideBTreasury: {fileID: 424630248}
+  citizens:
+  - {fileID: 139201371}
+  - {fileID: 2042153801}
+  - {fileID: 1126340299}
+  - {fileID: 1249443569}
+  - {fileID: 1642702458}
+  - {fileID: 780165622}
+  - {fileID: 637926093}
+  - {fileID: 1229737670}
+  - {fileID: 1980183594}
+  - {fileID: 1608182527}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -4064,4 +4519,6 @@ SceneRoots:
   - {fileID: 970434796}
   - {fileID: 1910713170}
   - {fileID: 1896526196}
+  - {fileID: 195692861}
   - {fileID: 361394901}
+  - {fileID: 424630249}

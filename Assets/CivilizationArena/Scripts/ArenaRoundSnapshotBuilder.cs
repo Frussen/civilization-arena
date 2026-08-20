@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
 using UnityEngine;
 
 public sealed class ArenaRoundSnapshot
@@ -31,6 +33,51 @@ public sealed class ArenaRoundSnapshotBuilder : MonoBehaviour
     [SerializeField] private AgentTreasury sideATreasury;
     [SerializeField] private AgentTreasury sideBTreasury;
     [SerializeField] private CitizenEmployment[] citizens;
+
+    [ContextMenu("Build Snapshot (Debug)")]
+    private void BuildSnapshotDebug()
+    {
+        if (!TryBuild(out ArenaRoundSnapshot snapshot, out string error))
+        {
+            Debug.LogError($"Arena snapshot build failed: {error}", this);
+            return;
+        }
+
+        StringBuilder text = new StringBuilder();
+        text.AppendLine("CIVILIZATION_ARENA_ROUND_SNAPSHOT");
+        AppendEconomicSnapshot(text, "sideA", snapshot.SideA);
+        text.AppendLine();
+        AppendEconomicSnapshot(text, "sideB", snapshot.SideB);
+        text.AppendLine();
+        text.AppendLine("citizens:");
+
+        List<string> citizenIds = new List<string>(
+            snapshot.Citizens.Keys);
+        citizenIds.Sort(StringComparer.Ordinal);
+
+        for (int i = 0; i < citizenIds.Count; i++)
+        {
+            ArenaCitizenEmploymentSnapshot citizen =
+                snapshot.Citizens[citizenIds[i]];
+            string employer = citizen.CurrentEmployerSide.HasValue
+                ? citizen.CurrentEmployerSide.Value.ToString()
+                : "none";
+
+            text.Append(citizen.CitizenId);
+            text.Append(": employed=");
+            text.Append(citizen.IsEmployed ? "true" : "false");
+            text.Append(" employer=");
+            text.Append(employer);
+            text.Append(" wage=");
+            text.Append(citizen.CurrentWage.ToString(
+                CultureInfo.InvariantCulture));
+            text.Append(" reservation=");
+            text.AppendLine(citizen.ReservationWage.ToString(
+                CultureInfo.InvariantCulture));
+        }
+
+        Debug.Log(text.ToString(), this);
+    }
 
     public bool TryBuild(
         out ArenaRoundSnapshot snapshot,
@@ -199,6 +246,24 @@ public sealed class ArenaRoundSnapshotBuilder : MonoBehaviour
             payrollCoverageHours);
         error = null;
         return true;
+    }
+
+    private static void AppendEconomicSnapshot(
+        StringBuilder text,
+        string sideName,
+        ArenaAgentEconomicSnapshot snapshot)
+    {
+        text.AppendLine($"{sideName}:");
+        text.AppendLine($"gold={Format(snapshot.Gold)}");
+        text.AppendLine(
+            $"payrollPerHour={Format(snapshot.CurrentPayrollPerHour)}");
+        text.AppendLine(
+            $"payrollCoverageHours={Format(snapshot.PayrollCoverageHours)}");
+    }
+
+    private static string Format(float value)
+    {
+        return value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     private static bool IsFiniteNonNegative(float value)
