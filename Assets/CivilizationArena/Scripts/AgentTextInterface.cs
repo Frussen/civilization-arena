@@ -189,6 +189,12 @@ public class AgentTextInterface : MonoBehaviour
             $"time: day={clock.Day} hour={clock.Hour:D2} " +
             $"minute={clock.Minute:D2}");
 
+        text.AppendLine("shiftRules:");
+        text.AppendLine("Day: works 08:00-18:00");
+        text.AppendLine("Night: works 18:00-04:00");
+        text.AppendLine("bothOffDuty: 04:00-08:00");
+        text.AppendLine("note: Night shift crosses midnight");
+
         text.AppendLine("economy:");
         text.AppendLine($"gold={Format(treasury.CurrentGold)}");
         text.AppendLine(
@@ -276,11 +282,47 @@ public class AgentTextInterface : MonoBehaviour
             ? assignment.CurrentWorkplace
             : null;
 
+        CitizenActivity activity = GetCitizenActivity(
+            citizen,
+            routine,
+            workplace);
+
         text.AppendLine(
             $"{citizen.name}: status={status}, employer={employerRelation}, " +
             $"wage={citizen.CurrentWage}, " +
             $"reservation={citizen.ReservationWage}, shift={shift}, " +
+            $"activity={activity}, " +
             $"workplace={GetWorkplaceId(workplace)}");
+    }
+
+    private static CitizenActivity GetCitizenActivity(
+        CitizenEmployment citizen,
+        CitizenRoutine routine,
+        Workplace workplace)
+    {
+        if (!citizen.IsEmployed)
+        {
+            return CitizenActivity.Unemployed;
+        }
+
+        if (routine == null)
+        {
+            return CitizenActivity.Idle;
+        }
+
+        if (!routine.IsWorkingTime)
+        {
+            return CitizenActivity.Resting;
+        }
+
+        if (workplace == null)
+        {
+            return CitizenActivity.Idle;
+        }
+
+        return workplace.IsWithinWorkArea(citizen.transform.position)
+            ? CitizenActivity.Working
+            : CitizenActivity.Traveling;
     }
 
     private AgentStrategicAction BuildActionReminder()
