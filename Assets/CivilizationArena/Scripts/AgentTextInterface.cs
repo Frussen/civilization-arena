@@ -162,14 +162,7 @@ public class AgentTextInterface : MonoBehaviour
             return false;
         }
 
-        float payrollPerHour = 0f;
-        foreach (CitizenEmployment citizen in citizens)
-        {
-            if (citizen.CurrentEmployer == treasury)
-            {
-                payrollPerHour += citizen.CurrentWage;
-            }
-        }
+        float payrollPerHour = treasury.CurrentPayrollPerHour;
 
         float remainingLabor = Mathf.Max(
             0f,
@@ -214,6 +207,12 @@ public class AgentTextInterface : MonoBehaviour
             "employedReassignment: offeredWage must be >= currentWage + 1");
         text.AppendLine(
             "maximumOfferWage: hard ceiling on hiring and reassignment offers");
+        text.AppendLine(
+            $"payrollCoverageHours: {Format(treasury.PayrollCoverageHours)}");
+        text.AppendLine(
+            "contractCoverage: currentGold must be >= " +
+            "projectedPayrollPerHour * payrollCoverageHours");
+        text.AppendLine("coverageFunds: checked but not reserved");
         text.AppendLine(
             "desiredWorkerCounts: targets only; workers move only through " +
             "valid ManualAgentController wage offers");

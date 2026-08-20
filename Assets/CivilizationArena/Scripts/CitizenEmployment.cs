@@ -10,6 +10,7 @@ public class CitizenEmployment : MonoBehaviour
     [SerializeField] private AgentTreasury currentEmployer;
     [SerializeField] private int currentWage;
     [SerializeField] private int reservationWage = MinimumAcceptableWage;
+    private bool payrollRegistered;
 
     public int MinimumWage => MinimumAcceptableWage;
     public AgentTreasury CurrentEmployer => currentEmployer;
@@ -20,6 +21,15 @@ public class CitizenEmployment : MonoBehaviour
     private void Awake()
     {
         workAssignment = GetComponent<CitizenWorkAssignment>();
+    }
+
+    private void Start()
+    {
+        if (!payrollRegistered && currentEmployer != null && currentWage > 0)
+        {
+            currentEmployer.AddPayrollCommitment(currentWage);
+            payrollRegistered = true;
+        }
     }
 
     private void Update()
@@ -64,6 +74,25 @@ public class CitizenEmployment : MonoBehaviour
             return false;
         }
 
+        float existingCommitment = payrollRegistered && currentEmployer == employer
+            ? currentWage
+            : 0f;
+        float projectedPayrollPerHour =
+            employer.CurrentPayrollPerHour - existingCommitment + offeredWage;
+
+        if (!employer.HasPayrollCoverage(projectedPayrollPerHour))
+        {
+            return false;
+        }
+
+        if (payrollRegistered && currentEmployer != null)
+        {
+            currentEmployer.RemovePayrollCommitment(currentWage);
+        }
+
+        employer.AddPayrollCommitment(offeredWage);
+        payrollRegistered = true;
+
         currentEmployer = employer;
         currentWage = offeredWage;
         reservationWage = Mathf.Max(reservationWage, offeredWage);
@@ -73,6 +102,12 @@ public class CitizenEmployment : MonoBehaviour
 
     private void ClearEmployment()
     {
+        if (payrollRegistered && currentEmployer != null)
+        {
+            currentEmployer.RemovePayrollCommitment(currentWage);
+        }
+
+        payrollRegistered = false;
         currentEmployer = null;
         currentWage = 0;
         workAssignment.Assign(null);
