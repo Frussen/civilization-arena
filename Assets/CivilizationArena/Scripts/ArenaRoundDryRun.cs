@@ -6,6 +6,7 @@ using UnityEngine;
 public sealed class ArenaRoundDryRun : MonoBehaviour
 {
     [SerializeField] private ArenaRoundSnapshotBuilder snapshotBuilder;
+    [SerializeField] private ArenaRoundApplier arenaRoundApplier;
 
     [TextArea(8, 24)]
     [SerializeField] private string sideAActionJson;
@@ -16,20 +17,82 @@ public sealed class ArenaRoundDryRun : MonoBehaviour
     [ContextMenu("Resolve Round (Dry Run)")]
     private void ResolveRoundDryRun()
     {
-        if (snapshotBuilder == null)
+        if (!TryResolveRound(
+            out ArenaRoundSnapshot snapshot,
+            out ArenaRoundResolution resolution,
+            out string error))
+        {
+            Debug.LogError($"Arena dry run failed: {error}", this);
+            return;
+        }
+
+        Debug.Log(BuildResolutionSummary(snapshot, resolution), this);
+    }
+
+    [ContextMenu("Resolve + Apply (Debug)")]
+    private void ResolveAndApplyDebug()
+    {
+        if (arenaRoundApplier == null)
         {
             Debug.LogError(
-                "Arena dry run configuration failed: snapshot builder is required.",
+                "Arena round apply configuration failed: applier is required.",
                 this);
             return;
         }
 
-        if (!snapshotBuilder.TryBuild(
-            out ArenaRoundSnapshot snapshot,
+        if (!TryResolveRound(
+            out ArenaRoundSnapshot originalSnapshot,
+            out ArenaRoundResolution resolution,
             out string error))
         {
-            Debug.LogError($"Arena dry run snapshot failed: {error}", this);
+            Debug.LogError($"Arena round apply preparation failed: {error}", this);
             return;
+        }
+
+        if (!arenaRoundApplier.TryApply(
+            originalSnapshot,
+            resolution,
+            out string applyError))
+        {
+            Debug.LogError($"Arena round application failed: {applyError}", this);
+            return;
+        }
+
+        if (!snapshotBuilder.TryBuild(
+            out ArenaRoundSnapshot postApplicationSnapshot,
+            out string snapshotError))
+        {
+            Debug.LogWarning(
+                BuildPostApplicationSnapshotFailureSummary(
+                    resolution,
+                    snapshotError),
+                this);
+            return;
+        }
+
+        Debug.Log(
+            BuildApplicationSummary(resolution, postApplicationSnapshot),
+            this);
+    }
+
+    private bool TryResolveRound(
+        out ArenaRoundSnapshot snapshot,
+        out ArenaRoundResolution resolution,
+        out string error)
+    {
+        snapshot = null;
+        resolution = null;
+
+        if (snapshotBuilder == null)
+        {
+            error = "snapshot builder is required.";
+            return false;
+        }
+
+        if (!snapshotBuilder.TryBuild(out snapshot, out error))
+        {
+            error = $"snapshot failed: {error}";
+            return false;
         }
 
         if (!ArenaActionParser.TryParse(
@@ -37,8 +100,8 @@ public sealed class ArenaRoundDryRun : MonoBehaviour
             out ArenaAction actionA,
             out error))
         {
-            Debug.LogError($"Arena dry run Side A parse failed: {error}", this);
-            return;
+            error = $"Side A parse failed: {error}";
+            return false;
         }
 
         if (!ArenaActionParser.TryParse(
@@ -46,8 +109,8 @@ public sealed class ArenaRoundDryRun : MonoBehaviour
             out ArenaAction actionB,
             out error))
         {
-            Debug.LogError($"Arena dry run Side B parse failed: {error}", this);
-            return;
+            error = $"Side B parse failed: {error}";
+            return false;
         }
 
         if (!ArenaOfferPairing.TryBuild(
@@ -56,8 +119,8 @@ public sealed class ArenaRoundDryRun : MonoBehaviour
             out IReadOnlyList<ArenaCitizenOfferPair> pairs,
             out error))
         {
-            Debug.LogError($"Arena dry run pairing failed: {error}", this);
-            return;
+            error = $"pairing failed: {error}";
+            return false;
         }
 
         OfferConflictResolver conflictResolver =
@@ -69,14 +132,83 @@ public sealed class ArenaRoundDryRun : MonoBehaviour
             snapshot.SideA,
             snapshot.SideB,
             conflictResolver,
-            out ArenaRoundResolution resolution,
+            out resolution,
             out error))
         {
-            Debug.LogError($"Arena dry run resolution failed: {error}", this);
-            return;
+            error = $"resolution failed: {error}";
+            return false;
         }
 
-        Debug.Log(BuildResolutionSummary(snapshot, resolution), this);
+        error = null;
+        return true;
+    }
+
+    private static string BuildApplicationSummary(
+        ArenaRoundResolution resolution,
+        ArenaRoundSnapshot postApplicationSnapshot)
+    {
+        StringBuilder text = new StringBuilder();
+        text.AppendLine("CIVILIZATION_ARENA_ROUND_APPLY_RESULT");
+        text.AppendLine("success=true");
+        AppendProjectedPayroll(text, resolution);
+        text.AppendLine();
+        text.AppendLine("postApplicationPayroll:");
+        text.AppendLine(
+            $"A={Format(postApplicationSnapshot.SideA.CurrentPayrollPerHour)}");
+        text.AppendLine(
+            $"B={Format(postApplicationSnapshot.SideB.CurrentPayrollPerHour)}");
+        AppendPostApplicationCitizens(text, postApplicationSnapshot);
+        return text.ToString().TrimEnd();
+    }
+
+    private static string BuildPostApplicationSnapshotFailureSummary(
+        ArenaRoundResolution resolution,
+        string snapshotError)
+    {
+        StringBuilder text = new StringBuilder();
+        text.AppendLine("CIVILIZATION_ARENA_ROUND_APPLY_RESULT");
+        text.AppendLine("success=true");
+        AppendProjectedPayroll(text, resolution);
+        text.AppendLine("postApplicationSnapshot=failed");
+        text.Append("verificationError=");
+        text.Append(snapshotError);
+        return text.ToString();
+    }
+
+    private static void AppendProjectedPayroll(
+        StringBuilder text,
+        ArenaRoundResolution resolution)
+    {
+        text.AppendLine("finalProjectedPayroll:");
+        text.AppendLine($"A={Format(resolution.FinalProjectedPayrollA)}");
+        text.AppendLine($"B={Format(resolution.FinalProjectedPayrollB)}");
+    }
+
+    private static void AppendPostApplicationCitizens(
+        StringBuilder text,
+        ArenaRoundSnapshot snapshot)
+    {
+        text.AppendLine();
+        text.AppendLine("citizens:");
+
+        List<string> citizenIds = new List<string>(snapshot.Citizens.Keys);
+        citizenIds.Sort(System.StringComparer.Ordinal);
+
+        for (int i = 0; i < citizenIds.Count; i++)
+        {
+            ArenaCitizenEmploymentSnapshot citizen =
+                snapshot.Citizens[citizenIds[i]];
+            string employer = citizen.CurrentEmployerSide.HasValue
+                ? citizen.CurrentEmployerSide.Value.ToString()
+                : "none";
+
+            text.Append(citizen.CitizenId);
+            text.Append(": employer=");
+            text.Append(employer);
+            text.Append(" wage=");
+            text.AppendLine(citizen.CurrentWage.ToString(
+                CultureInfo.InvariantCulture));
+        }
     }
 
     private static string BuildResolutionSummary(

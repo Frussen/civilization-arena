@@ -55,17 +55,20 @@ public sealed class ArenaRoundResolution
     public IReadOnlyList<ArenaCitizenOfferResolution> Citizens { get; }
     public float FinalProjectedPayrollA { get; }
     public float FinalProjectedPayrollB { get; }
+    public ArenaSide InitialTiePriority { get; }
     public ArenaSide FinalTiePriority { get; }
 
     internal ArenaRoundResolution(
         ArenaCitizenOfferResolution[] citizens,
         float finalProjectedPayrollA,
         float finalProjectedPayrollB,
+        ArenaSide initialTiePriority,
         ArenaSide finalTiePriority)
     {
         Citizens = Array.AsReadOnly(citizens);
         FinalProjectedPayrollA = finalProjectedPayrollA;
         FinalProjectedPayrollB = finalProjectedPayrollB;
+        InitialTiePriority = initialTiePriority;
         FinalTiePriority = finalTiePriority;
     }
 }
@@ -107,11 +110,12 @@ public static class ArenaRoundResolver
         }
 
         OfferConflictResolver temporaryConflictResolver;
+        ArenaSide initialTiePriority = conflictResolver.TiePriority;
 
         try
         {
             temporaryConflictResolver = new OfferConflictResolver(
-                conflictResolver.TiePriority);
+                initialTiePriority);
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -213,6 +217,7 @@ public static class ArenaRoundResolver
             citizenResults,
             projectedPayrollA,
             projectedPayrollB,
+            initialTiePriority,
             temporaryConflictResolver.TiePriority);
 
         for (int i = 0; i < conflictComparisons.Count; i++)

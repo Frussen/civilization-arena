@@ -1104,7 +1104,7 @@ MonoBehaviour:
   stockpile: {fileID: 424630246}
   manualController: {fileID: 424630247}
   decisionScheduler: {fileID: 424630244}
-  wonder: {fileID: 1896526194}
+  wonder: {fileID: 195692859}
   citizens:
   - {fileID: 139201371}
   - {fileID: 2042153801}
@@ -1122,7 +1122,7 @@ MonoBehaviour:
   - id: lumber_camp
     workplace: {fileID: 1674926887}
   - id: wonder
-    workplace: {fileID: 1896526195}
+    workplace: {fileID: 195692860}
   latestObservation: 
   actionJson: 
   latestActionResult: 
@@ -4422,6 +4422,8 @@ GameObject:
   - component: {fileID: 2071210469}
   - component: {fileID: 2071210471}
   - component: {fileID: 2071210472}
+  - component: {fileID: 2071210473}
+  - component: {fileID: 2071210474}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -4504,6 +4506,47 @@ MonoBehaviour:
   - {fileID: 1229737670}
   - {fileID: 1980183594}
   - {fileID: 1608182527}
+--- !u!114 &2071210473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b92edf276470547958140cf13e27ddbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaRoundDryRun
+  snapshotBuilder: {fileID: 2071210472}
+  arenaRoundApplier: {fileID: 2071210474}
+  sideAActionJson: "{\n  \"offers\": [\n    {\n      \"citizenId\": \"Citizen_01\",\n     
+    \"workplaceId\": \"quarry\",\n      \"wage\": 5\n    },\n    {\n      \"citizenId\":
+    \"Citizen_02\",\n      \"workplaceId\": \"lumber_camp\",\n      \"wage\": 5\n   
+    },\n    {\n      \"citizenId\": \"Citizen_03\",\n      \"workplaceId\": \"quarry\",\n     
+    \"wage\": 5\n    }\n  ],\n  \"strategyNote\": \"Test A.\"\n}"
+  sideBActionJson: "{\n  \"offers\": [\n    {\n      \"citizenId\": \"Citizen_01\",\n     
+    \"workplaceId\": \"lumber_camp\",\n      \"wage\": 5\n    },\n    {\n      \"citizenId\":
+    \"Citizen_02\",\n      \"workplaceId\": \"quarry\",\n      \"wage\": 5\n    },\n   
+    {\n      \"citizenId\": \"Citizen_04\",\n      \"workplaceId\": \"lumber_camp\",\n     
+    \"wage\": 5\n    }\n  ],\n  \"strategyNote\": \"Test B.\"\n}"
+--- !u!114 &2071210474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 852f44c469a7345968b49cece4b57803, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaRoundApplier
+  snapshotBuilder: {fileID: 2071210472}
+  sideATreasury: {fileID: 361394900}
+  sideBTreasury: {fileID: 424630248}
+  sideATextInterface: {fileID: 361394904}
+  sideBTextInterface: {fileID: 424630245}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

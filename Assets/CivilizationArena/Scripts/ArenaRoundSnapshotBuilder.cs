@@ -34,6 +34,50 @@ public sealed class ArenaRoundSnapshotBuilder : MonoBehaviour
     [SerializeField] private AgentTreasury sideBTreasury;
     [SerializeField] private CitizenEmployment[] citizens;
 
+    public AgentTreasury SideATreasury => sideATreasury;
+    public AgentTreasury SideBTreasury => sideBTreasury;
+
+    public bool TryGetConfiguredCitizens(
+        out IReadOnlyDictionary<string, CitizenEmployment>
+            configuredCitizens,
+        out string error)
+    {
+        configuredCitizens = null;
+
+        if (citizens == null)
+        {
+            error = "Configured citizens are required.";
+            return false;
+        }
+
+        Dictionary<string, CitizenEmployment> citizensById =
+            new Dictionary<string, CitizenEmployment>(
+                StringComparer.Ordinal);
+
+        for (int i = 0; i < citizens.Length; i++)
+        {
+            CitizenEmployment citizen = citizens[i];
+            string citizenId = citizen != null
+                ? citizen.gameObject.name
+                : null;
+
+            if (citizen == null ||
+                string.IsNullOrWhiteSpace(citizenId) ||
+                !citizensById.TryAdd(citizenId, citizen))
+            {
+                error =
+                    "Configured citizens must have unique, non-empty IDs.";
+                return false;
+            }
+        }
+
+        configuredCitizens = new ReadOnlyDictionary<
+            string,
+            CitizenEmployment>(citizensById);
+        error = null;
+        return true;
+    }
+
     [ContextMenu("Build Snapshot (Debug)")]
     private void BuildSnapshotDebug()
     {
