@@ -16,7 +16,7 @@ public sealed class ArenaRoundApplier : MonoBehaviour
         ArenaRoundResolution resolution,
         out string error)
     {
-        if (!TryValidateConfiguration(out error) ||
+        if (!TryValidateInternalConfiguration(out error) ||
             expectedSnapshot == null ||
             resolution == null)
         {
@@ -124,7 +124,40 @@ public sealed class ArenaRoundApplier : MonoBehaviour
         return true;
     }
 
-    private bool TryValidateConfiguration(out string error)
+    public bool TryValidateConfiguration(
+        ArenaRoundSnapshotBuilder expectedSnapshotBuilder,
+        AgentTextInterface expectedSideATextInterface,
+        AgentTextInterface expectedSideBTextInterface,
+        out string error)
+    {
+        if (!TryValidateInternalConfiguration(out error))
+        {
+            return false;
+        }
+
+        if (expectedSnapshotBuilder == null ||
+            expectedSideATextInterface == null ||
+            expectedSideBTextInterface == null)
+        {
+            error = "Expected Arena application references are required.";
+            return false;
+        }
+
+        if (snapshotBuilder != expectedSnapshotBuilder ||
+            sideATextInterface != expectedSideATextInterface ||
+            sideBTextInterface != expectedSideBTextInterface)
+        {
+            error =
+                "ArenaRoundApplier does not use the controller's snapshot " +
+                "builder and side text interfaces.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private bool TryValidateInternalConfiguration(out string error)
     {
         if (snapshotBuilder == null ||
             sideATreasury == null ||
@@ -139,6 +172,15 @@ public sealed class ArenaRoundApplier : MonoBehaviour
         if (sideATreasury == sideBTreasury)
         {
             error = "Side A and Side B must use different treasuries.";
+            return false;
+        }
+
+        if (sideATextInterface == sideBTextInterface ||
+            sideATextInterface.Treasury != sideATreasury ||
+            sideBTextInterface.Treasury != sideBTreasury)
+        {
+            error =
+                "ArenaRoundApplier text-interface side mappings are invalid.";
             return false;
         }
 

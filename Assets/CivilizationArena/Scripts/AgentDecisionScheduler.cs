@@ -17,7 +17,7 @@ public class AgentDecisionScheduler : MonoBehaviour
     [SerializeField] private int decisionsRequested;
 
     private bool firstUpdatePending;
-    private float timeScaleBeforePause = 1f;
+    private SimulationPauseLease pauseLease;
     private AgentControlMode activeControlMode;
 
     public AgentControlMode ControlMode => controlMode;
@@ -53,6 +53,10 @@ public class AgentDecisionScheduler : MonoBehaviour
         {
             textInterface.ActionApplied -= HandleActionApplied;
         }
+
+        awaitingAction = false;
+        simulatedMinutesUntilNextDecision = SafeDecisionInterval;
+        ReleasePauseLease();
     }
 
     private void Update()
@@ -60,6 +64,7 @@ public class AgentDecisionScheduler : MonoBehaviour
         if (matchController == null || matchController.IsEnded)
         {
             awaitingAction = false;
+            ReleasePauseLease();
             return;
         }
 
@@ -126,15 +131,10 @@ public class AgentDecisionScheduler : MonoBehaviour
             return;
         }
 
-        if (Time.timeScale > 0f)
-        {
-            timeScaleBeforePause = Time.timeScale;
-        }
-
         decisionsRequested++;
         awaitingAction = true;
         simulatedMinutesUntilNextDecision = 0;
-        Time.timeScale = 0f;
+        pauseLease = SimulationPauseCoordinator.Acquire();
         DecisionRequested?.Invoke(
             decisionsRequested,
             textInterface.LatestObservation);
@@ -150,14 +150,13 @@ public class AgentDecisionScheduler : MonoBehaviour
         if (matchController == null || matchController.IsEnded)
         {
             awaitingAction = false;
+            ReleasePauseLease();
             return false;
         }
 
         awaitingAction = false;
         simulatedMinutesUntilNextDecision = SafeDecisionInterval;
-        Time.timeScale = timeScaleBeforePause > 0f
-            ? timeScaleBeforePause
-            : 1f;
+        ReleasePauseLease();
         return true;
     }
 
@@ -173,19 +172,9 @@ public class AgentDecisionScheduler : MonoBehaviour
 
         if (controlMode == AgentControlMode.Manual)
         {
-            bool schedulerOwnedPause = awaitingAction;
             awaitingAction = false;
             simulatedMinutesUntilNextDecision = SafeDecisionInterval;
-
-            if (schedulerOwnedPause &&
-                matchController != null &&
-                !matchController.IsEnded &&
-                Time.timeScale == 0f)
-            {
-                Time.timeScale = timeScaleBeforePause > 0f
-                    ? timeScaleBeforePause
-                    : 1f;
-            }
+            ReleasePauseLease();
 
             return;
         }
@@ -210,4 +199,15 @@ public class AgentDecisionScheduler : MonoBehaviour
     }
 
     private int SafeDecisionInterval => Mathf.Max(1, decisionIntervalMinutes);
+
+    private void ReleasePauseLease()
+    {
+        if (!pauseLease.IsValid)
+        {
+            return;
+        }
+
+        SimulationPauseCoordinator.Release(pauseLease);
+        pauseLease = default;
+    }
 }

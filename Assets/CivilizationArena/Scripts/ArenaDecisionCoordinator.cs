@@ -51,4 +51,16 @@ public sealed class ArenaDecisionCoordinator
         actionBatch.Reset();
         return true;
     }
+
+    public bool TryAbortRound()
+    {
+        if (!isRoundOpen)
+        {
+            return false;
+        }
+
+        isRoundOpen = false;
+        actionBatch.Reset();
+        return true;
+    }
 }

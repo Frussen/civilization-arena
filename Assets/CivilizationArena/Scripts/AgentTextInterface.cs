@@ -178,6 +178,82 @@ public class AgentTextInterface : MonoBehaviour
             out error);
     }
 
+    public bool TryValidateArenaSideConfiguration(
+        AgentTreasury expectedTreasury,
+        out string error)
+    {
+        if (expectedTreasury == null)
+        {
+            error = "Expected Arena treasury is required.";
+            return false;
+        }
+
+        if (!TryValidateConfiguration(out _, out error))
+        {
+            return false;
+        }
+
+        if (decisionScheduler.ControlMode != AgentControlMode.Api)
+        {
+            error =
+                "Arena LLM observations require Api action semantics.";
+            return false;
+        }
+
+        if (treasury != expectedTreasury)
+        {
+            error = "AgentTextInterface uses the wrong Arena treasury.";
+            return false;
+        }
+
+        AgentResourceStockpile expectedStockpile =
+            expectedTreasury.GetComponent<AgentResourceStockpile>();
+
+        if (stockpile == null || stockpile != expectedStockpile)
+        {
+            error =
+                "AgentTextInterface stockpile does not belong to its " +
+                "Arena treasury.";
+            return false;
+        }
+
+        if (wonder == null || wonder.Owner != expectedTreasury)
+        {
+            error =
+                "AgentTextInterface Wonder does not belong to its " +
+                "Arena treasury.";
+            return false;
+        }
+
+        if (!TryGetOfferConfiguration(
+                out _,
+                out _,
+                out _,
+                out Workplace[] configuredWorkplaces,
+                out error))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < configuredWorkplaces.Length; i++)
+        {
+            WonderConstruction workplaceWonder =
+                configuredWorkplaces[i].GetComponent<WonderConstruction>();
+
+            if (workplaceWonder != null &&
+                workplaceWonder.Owner != expectedTreasury)
+            {
+                error =
+                    "An ownership-bearing Workplace binding belongs to " +
+                    "the other Arena side.";
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
     private bool TryGetConfiguredObjects(
         bool requireUniqueCitizenIds,
         out string[] citizenIds,

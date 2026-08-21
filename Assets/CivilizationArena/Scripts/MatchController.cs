@@ -29,11 +29,6 @@ public class MatchController : MonoBehaviour
         finalHour = 0;
         finalMinute = 0;
         latestMatchResult = string.Empty;
-
-        if (Time.timeScale == 0f)
-        {
-            Time.timeScale = 1f;
-        }
     }
 
     private void Update()
@@ -72,7 +67,7 @@ public class MatchController : MonoBehaviour
 
         if (pauseSimulationOnEnd)
         {
-            Time.timeScale = 0f;
+            SimulationPauseCoordinator.Acquire();
         }
     }
 }
