@@ -811,18 +811,22 @@ MonoBehaviour:
     Offers are processed
     sequentially in the supplied order, and rejection is a possible gameplay outcome.
 
-    Consider
-    current time, work shift, activity, wage, reservation wage, current employer
-    and Workplace, resources, payroll, and Wonder requirements.
+    You
+    are competing against another strategic agent pursuing its own Wonder. The opposing
+    agent can make employment offers to any citizen, including your current workers,
+    so workforce ownership is not guaranteed between decisions.
 
-    Do not invent
-    actions that are not available.
+    Consider current
+    time, work shift, activity, wage, reservation wage, current employer and Workplace,
+    resources, payroll, and Wonder requirements.
 
-    Return the strategic action required by
-    the supplied schema.
+    Do not invent actions that
+    are not available.
 
-    strategyNote must contain only a short high-level strategy
-    summary.'
+    Return the strategic action required by the supplied
+    schema.
+
+    strategyNote must contain only a short high-level strategy summary.'
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1013,18 +1017,22 @@ MonoBehaviour:
     Offers are processed
     sequentially in the supplied order, and rejection is a possible gameplay outcome.
 
-    Consider
-    current time, work shift, activity, wage, reservation wage, current employer
-    and Workplace, resources, payroll, and Wonder requirements.
+    You
+    are competing against another strategic agent pursuing its own Wonder. The opposing
+    agent can make employment offers to any citizen, including your current workers,
+    so workforce ownership is not guaranteed between decisions.
 
-    Do not invent
-    actions that are not available.
+    Consider current
+    time, work shift, activity, wage, reservation wage, current employer and Workplace,
+    resources, payroll, and Wonder requirements.
 
-    Return the strategic action required by
-    the supplied schema.
+    Do not invent actions that
+    are not available.
 
-    strategyNote must contain only a short high-level strategy
-    summary.'
+    Return the strategic action required by the supplied
+    schema.
+
+    strategyNote must contain only a short high-level strategy summary.'
 --- !u!114 &424630242
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4406,6 +4414,7 @@ GameObject:
   - component: {fileID: 2071210474}
   - component: {fileID: 2071210475}
   - component: {fileID: 2071210476}
+  - component: {fileID: 2071210477}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -4544,6 +4553,7 @@ MonoBehaviour:
   snapshotBuilder: {fileID: 2071210472}
   roundApplier: {fileID: 2071210474}
   arenaMatchController: {fileID: 2071210476}
+  matchLogger: {fileID: 2071210477}
   sideATextInterface: {fileID: 361394904}
   sideAProvider: {fileID: 361394908}
   sideBTextInterface: {fileID: 424630245}
@@ -4581,10 +4591,29 @@ MonoBehaviour:
   wonderA: {fileID: 1896526194}
   wonderB: {fileID: 195692859}
   worldClock: {fileID: 2071210469}
+  matchLogger: {fileID: 2071210477}
   result: 0
   wonderACompleted: 0
   wonderBCompleted: 0
   latestMatchResult: 
+--- !u!114 &2071210477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cbf653d22aa94282b101f4a321e0fe1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaMatchLogger
+  snapshotBuilder: {fileID: 2071210472}
+  matchController: {fileID: 2071210476}
+  roundController: {fileID: 2071210475}
+  runId: 
+  currentLogPath: 
+  fileLoggingActive: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

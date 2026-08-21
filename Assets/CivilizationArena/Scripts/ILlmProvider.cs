@@ -14,6 +14,9 @@ public interface ILlmProvider
 
 public abstract class LlmProviderBehaviour : MonoBehaviour, ILlmProvider
 {
+    public virtual string ProviderLabel => GetType().Name;
+    public virtual string ModelLabel => string.Empty;
+
     public abstract void RequestAction(
         string observation,
         string[] citizenIds,

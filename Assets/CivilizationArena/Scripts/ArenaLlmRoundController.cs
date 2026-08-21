@@ -9,6 +9,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     [SerializeField] private ArenaRoundSnapshotBuilder snapshotBuilder;
     [SerializeField] private ArenaRoundApplier roundApplier;
     [SerializeField] private ArenaMatchController arenaMatchController;
+    [SerializeField] private ArenaMatchLogger matchLogger;
 
     [SerializeField] private AgentTextInterface sideATextInterface;
     [SerializeField] private LlmProviderBehaviour sideAProvider;
@@ -54,6 +55,8 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     private int lifecycleVersion;
     private int sideARequestVersion;
     private int sideBRequestVersion;
+    private int sideAProviderAttempt;
+    private int sideBProviderAttempt;
     private bool firstAutomaticUpdatePending;
     private bool automaticSchedulingWasEnabled;
     private bool automaticConfigurationErrorReported;
@@ -70,6 +73,16 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     public string LatestSideBActionJson => latestSideBActionJson;
     public string LatestStatus => latestStatus;
     public string LatestError => latestError;
+    public ArenaRoundSnapshotBuilder SnapshotBuilder => snapshotBuilder;
+    public ArenaMatchController ArenaMatchController => arenaMatchController;
+    public bool AutomaticRoundsEnabled => automaticRoundsEnabled;
+    public int RoundIntervalMinutes => roundIntervalMinutes;
+    public bool RequestRoundOnStart => requestRoundOnStart;
+    public WorldClock WorldClock => worldClock;
+    public AgentTextInterface SideATextInterface => sideATextInterface;
+    public AgentTextInterface SideBTextInterface => sideBTextInterface;
+    public LlmProviderBehaviour SideAProvider => sideAProvider;
+    public LlmProviderBehaviour SideBProvider => sideBProvider;
 
     private void OnEnable()
     {
@@ -252,7 +265,19 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         latestSideBActionJson = string.Empty;
         latestError = string.Empty;
         latestStatus = $"Arena round {roundId}: requesting both actions.";
+        sideAProviderAttempt = 0;
+        sideBProviderAttempt = 0;
         SyncSubmissionState();
+
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            matchLogger.RecordRoundStart(
+                roundId,
+                activeSnapshot,
+                sideAObservation,
+                sideBObservation,
+                nextTiePriority);
+        }
 
         StartRequest(ArenaSide.A, roundId);
         StartRequest(ArenaSide.B, roundId);
@@ -579,6 +604,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         string[] citizenIds;
         string[] workplaceIds;
         int requestAttempt;
+        int providerAttempt;
 
         if (side == ArenaSide.A)
         {
@@ -589,6 +615,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
             sideARequestInFlight = true;
             requestAttempt = ++sideARequestVersion;
+            providerAttempt = ++sideAProviderAttempt;
             provider = sideAProvider;
             observation = sideAObservation;
             citizenIds = sideACitizenIds;
@@ -603,6 +630,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
             sideBRequestInFlight = true;
             requestAttempt = ++sideBRequestVersion;
+            providerAttempt = ++sideBProviderAttempt;
             provider = sideBProvider;
             observation = sideBObservation;
             citizenIds = sideBCitizenIds;
@@ -617,6 +645,13 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         if (!provider.isActiveAndEnabled)
         {
             SetRequestInFlight(side, false);
+            RecordProviderResult(
+                roundId,
+                side,
+                providerAttempt,
+                false,
+                null,
+                "configured provider is not active.");
             ReportSideFailure(side, "configured provider is not active.");
             return false;
         }
@@ -633,6 +668,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 result => HandleProviderResult(
                     requestLifecycleVersion,
                     requestAttempt,
+                    providerAttempt,
                     roundId,
                     side,
                     result));
@@ -646,6 +682,13 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 side))
             {
                 SetRequestInFlight(side, false);
+                RecordProviderResult(
+                    roundId,
+                    side,
+                    providerAttempt,
+                    false,
+                    null,
+                    $"provider request threw: {exception.Message}");
                 ReportSideFailure(
                     side,
                     $"provider request threw: {exception.Message}");
@@ -660,6 +703,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     private void HandleProviderResult(
         int requestLifecycleVersion,
         int requestAttempt,
+        int providerAttempt,
         int roundId,
         ArenaSide side,
         LlmProviderResult result)
@@ -677,6 +721,13 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         if (result == null)
         {
+            RecordProviderResult(
+                roundId,
+                side,
+                providerAttempt,
+                false,
+                null,
+                "provider returned no result.");
             ReportSideFailure(side, "provider returned no result.");
             return;
         }
@@ -686,9 +737,24 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             string detail = string.IsNullOrWhiteSpace(result.Error)
                 ? "provider request failed."
                 : result.Error;
+            RecordProviderResult(
+                roundId,
+                side,
+                providerAttempt,
+                false,
+                null,
+                detail);
             ReportSideFailure(side, detail);
             return;
         }
+
+        RecordProviderResult(
+            roundId,
+            side,
+            providerAttempt,
+            true,
+            result.ActionJson,
+            null);
 
         if (string.IsNullOrWhiteSpace(result.ActionJson) ||
             !coordinator.TrySubmit(roundId, side, result.ActionJson))
@@ -760,7 +826,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 out ArenaAction actionA,
                 out string error))
             {
-                FailResolvedRound($"Side A action parse failed: {error}");
+                FailResolvedRound(
+                    "parse_a",
+                    $"Side A action parse failed: {error}");
                 return;
             }
 
@@ -769,7 +837,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 out ArenaAction actionB,
                 out error))
             {
-                FailResolvedRound($"Side B action parse failed: {error}");
+                FailResolvedRound(
+                    "parse_b",
+                    $"Side B action parse failed: {error}");
                 return;
             }
 
@@ -779,7 +849,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 out IReadOnlyList<ArenaCitizenOfferPair> pairs,
                 out error))
             {
-                FailResolvedRound($"Offer pairing failed: {error}");
+                FailResolvedRound("pairing", $"Offer pairing failed: {error}");
                 return;
             }
 
@@ -795,13 +865,17 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 out ArenaRoundResolution resolution,
                 out error))
             {
-                FailResolvedRound($"Round resolution failed: {error}");
+                FailResolvedRound(
+                    "resolution",
+                    $"Round resolution failed: {error}");
                 return;
             }
 
             if (!roundApplier.TryApply(activeSnapshot, resolution, out error))
             {
-                FailResolvedRound($"Round application failed: {error}");
+                FailResolvedRound(
+                    "application",
+                    $"Round application failed: {error}");
                 return;
             }
 
@@ -810,6 +884,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             if (!coordinator.TryCloseRound())
             {
                 FailResolvedRound(
+                    "coordinator_close",
                     "Round applied, but the decision coordinator could not close it.");
                 return;
             }
@@ -828,6 +903,11 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                     resolution),
                 this);
 
+            if (matchLogger != null && matchLogger.isActiveAndEnabled)
+            {
+                matchLogger.RecordRoundResult(roundId, resolution);
+            }
+
             ClearActiveRoundData();
             ReleasePauseLease();
         }
@@ -844,12 +924,40 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         ReleasePauseLease();
     }
 
-    private void FailResolvedRound(string error)
+    private void FailResolvedRound(string stage, string error)
     {
         latestStatus =
             $"Arena round {currentArenaRoundId}: resolution/application failed.";
         latestError = error;
         Debug.LogError(error, this);
+
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            matchLogger.RecordRoundFailure(
+                currentArenaRoundId,
+                stage,
+                error);
+        }
+    }
+
+    private void RecordProviderResult(
+        int roundId,
+        ArenaSide side,
+        int attempt,
+        bool success,
+        string actionJson,
+        string error)
+    {
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            matchLogger.RecordProviderResult(
+                roundId,
+                side,
+                attempt,
+                success,
+                actionJson,
+                error);
+        }
     }
 
     private void ReportSideFailure(ArenaSide side, string detail)

@@ -17,6 +17,7 @@ public sealed class ArenaMatchController : MonoBehaviour
     [SerializeField] private WonderConstruction wonderA;
     [SerializeField] private WonderConstruction wonderB;
     [SerializeField] private WorldClock worldClock;
+    [SerializeField] private ArenaMatchLogger matchLogger;
 
     [SerializeField] private ArenaMatchResult result =
         ArenaMatchResult.InProgress;
@@ -30,6 +31,9 @@ public sealed class ArenaMatchController : MonoBehaviour
 
     public AgentTreasury SideATreasury => sideATreasury;
     public AgentTreasury SideBTreasury => sideBTreasury;
+    public WonderConstruction WonderA => wonderA;
+    public WonderConstruction WonderB => wonderB;
+    public WorldClock WorldClock => worldClock;
     public bool IsMatchEnded => result != ArenaMatchResult.InProgress;
     public ArenaMatchResult Result => result;
     public string LatestMatchResult => latestMatchResult;
@@ -57,6 +61,11 @@ public sealed class ArenaMatchController : MonoBehaviour
         if (IsMatchEnded)
         {
             return;
+        }
+
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            matchLogger.EnsureMatchLogStarted();
         }
 
         if (!TryValidateConfiguration(out string error))
@@ -143,6 +152,11 @@ public sealed class ArenaMatchController : MonoBehaviour
         matchPauseLease = SimulationPauseCoordinator.Acquire();
         latestMatchResult = BuildMatchResult();
         Debug.Log(latestMatchResult, this);
+
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            matchLogger.RecordMatchEnd(result);
+        }
     }
 
     private string BuildMatchResult()

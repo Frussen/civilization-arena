@@ -162,6 +162,11 @@ public class AgentTextInterface : MonoBehaviour
         return ids;
     }
 
+    public string GetConfiguredWorkplaceId(Workplace workplace)
+    {
+        return GetWorkplaceId(workplace);
+    }
+
     public bool TryGetOfferConfiguration(
         out string[] citizenIds,
         out CitizenEmployment[] configuredCitizens,

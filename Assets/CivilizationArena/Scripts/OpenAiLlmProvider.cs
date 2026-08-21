@@ -38,6 +38,8 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     private Coroutine activeRequest;
     private int requestVersion;
 
+    public override string ModelLabel => model;
+
     public override void RequestAction(
         string observation,
         string[] citizenIds,
