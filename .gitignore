@@ -23,3 +23,7 @@ UserSettings/
 
 # Crash reports
 sysinfo.txt
+
+# TextMesh Pro optional examples
+Assets/TextMesh Pro/Examples & Extras/
+Assets/TextMesh Pro/Examples & Extras.meta
