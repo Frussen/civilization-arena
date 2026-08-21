@@ -4405,6 +4405,7 @@ GameObject:
   - component: {fileID: 2071210473}
   - component: {fileID: 2071210474}
   - component: {fileID: 2071210475}
+  - component: {fileID: 2071210476}
   m_Layer: 0
   m_Name: World
   m_TagString: Untagged
@@ -4448,7 +4449,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2071210468}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30ba9abac61bf48d0af7f552a4756882, type: 3}
   m_Name: 
@@ -4542,6 +4543,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaLlmRoundController
   snapshotBuilder: {fileID: 2071210472}
   roundApplier: {fileID: 2071210474}
+  arenaMatchController: {fileID: 2071210476}
   sideATextInterface: {fileID: 361394904}
   sideAProvider: {fileID: 361394908}
   sideBTextInterface: {fileID: 424630245}
@@ -4562,6 +4564,27 @@ MonoBehaviour:
   latestSideBActionJson: 
   latestStatus: 
   latestError: 
+--- !u!114 &2071210476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071210468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edd0a208b5e854d7981a2437eee8f2dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaMatchController
+  sideATreasury: {fileID: 361394900}
+  sideBTreasury: {fileID: 424630248}
+  wonderA: {fileID: 1896526194}
+  wonderB: {fileID: 195692859}
+  worldClock: {fileID: 2071210469}
+  result: 0
+  wonderACompleted: 0
+  wonderBCompleted: 0
+  latestMatchResult: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

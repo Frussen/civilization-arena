@@ -8,6 +8,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 {
     [SerializeField] private ArenaRoundSnapshotBuilder snapshotBuilder;
     [SerializeField] private ArenaRoundApplier roundApplier;
+    [SerializeField] private ArenaMatchController arenaMatchController;
 
     [SerializeField] private AgentTextInterface sideATextInterface;
     [SerializeField] private LlmProviderBehaviour sideAProvider;
@@ -93,6 +94,11 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return;
         }
 
+        if (arenaMatchController != null && arenaMatchController.IsMatchEnded)
+        {
+            return;
+        }
+
         if (!TryValidateAutomaticScheduling(out string error))
         {
             if (!automaticConfigurationErrorReported)
@@ -162,6 +168,12 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         if (roundActive)
         {
             ReportFailure("An Arena LLM round is already active.");
+            return false;
+        }
+
+        if (arenaMatchController != null && arenaMatchController.IsMatchEnded)
+        {
+            ReportFailure("The Arena match has already ended.");
             return false;
         }
 
@@ -299,12 +311,19 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         if (snapshotBuilder == null ||
             roundApplier == null ||
+            arenaMatchController == null ||
             sideATextInterface == null ||
             sideAProvider == null ||
             sideBTextInterface == null ||
             sideBProvider == null)
         {
             error = "Arena LLM round references are not fully configured.";
+            return false;
+        }
+
+        if (!arenaMatchController.isActiveAndEnabled)
+        {
+            error = "ArenaMatchController must be active and enabled.";
             return false;
         }
 
@@ -335,6 +354,22 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             snapshotBuilder.SideATreasury == snapshotBuilder.SideBTreasury)
         {
             error = "Arena snapshot side treasuries are not valid.";
+            return false;
+        }
+
+        if (!arenaMatchController.TryValidateConfiguration(out error))
+        {
+            error = $"ArenaMatchController configuration failed: {error}";
+            return false;
+        }
+
+        if (arenaMatchController.SideATreasury !=
+                snapshotBuilder.SideATreasury ||
+            arenaMatchController.SideBTreasury !=
+                snapshotBuilder.SideBTreasury)
+        {
+            error =
+                "Arena match and snapshot-builder side mappings differ.";
             return false;
         }
 

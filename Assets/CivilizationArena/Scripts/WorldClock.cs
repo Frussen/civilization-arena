@@ -40,6 +40,7 @@ public static class SimulationExecutionOrder
 {
     public const int WorldClock = -500;
     public const int TreasuryEconomy = -400;
+    public const int ArenaMatchEvaluation = 0;
     public const int ManualDecisions = 100;
     public const int SingleAgentDecisions = 200;
 }
