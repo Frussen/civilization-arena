@@ -14,6 +14,12 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     [SerializeField] private AgentTextInterface sideBTextInterface;
     [SerializeField] private LlmProviderBehaviour sideBProvider;
 
+    [SerializeField] private WorldClock worldClock;
+    [SerializeField] private bool automaticRoundsEnabled;
+    [Min(1)]
+    [SerializeField] private int roundIntervalMinutes = 360;
+    [SerializeField] private bool requestRoundOnStart;
+
     [SerializeField] private int currentArenaRoundId;
     [SerializeField] private bool roundActive;
     [SerializeField] private bool sideARequestInFlight;
@@ -21,6 +27,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     [SerializeField] private bool sideASubmitted;
     [SerializeField] private bool sideBSubmitted;
     [SerializeField] private ArenaSide nextTiePriority = ArenaSide.A;
+    [SerializeField] private int minutesUntilNextRound = 360;
 
     [TextArea(8, 24)]
     [SerializeField] private string latestSideAActionJson;
@@ -46,6 +53,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     private int lifecycleVersion;
     private int sideARequestVersion;
     private int sideBRequestVersion;
+    private bool firstAutomaticUpdatePending;
+    private bool automaticSchedulingWasEnabled;
+    private bool automaticConfigurationErrorReported;
 
     public int CurrentArenaRoundId => currentArenaRoundId;
     public bool RoundActive => roundActive;
@@ -54,25 +64,105 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     public bool SideASubmitted => sideASubmitted;
     public bool SideBSubmitted => sideBSubmitted;
     public ArenaSide NextTiePriority => nextTiePriority;
+    public int MinutesUntilNextRound => minutesUntilNextRound;
     public string LatestSideAActionJson => latestSideAActionJson;
     public string LatestSideBActionJson => latestSideBActionJson;
     public string LatestStatus => latestStatus;
     public string LatestError => latestError;
 
+    private void OnEnable()
+    {
+        automaticSchedulingWasEnabled = automaticRoundsEnabled;
+        firstAutomaticUpdatePending = automaticRoundsEnabled;
+        automaticConfigurationErrorReported = false;
+        ResetAutomaticCountdown();
+    }
+
+    private void LateUpdate()
+    {
+        if (automaticRoundsEnabled != automaticSchedulingWasEnabled)
+        {
+            automaticSchedulingWasEnabled = automaticRoundsEnabled;
+            firstAutomaticUpdatePending = automaticRoundsEnabled;
+            automaticConfigurationErrorReported = false;
+            ResetAutomaticCountdown();
+        }
+
+        if (!automaticRoundsEnabled || roundActive)
+        {
+            return;
+        }
+
+        if (!TryValidateAutomaticScheduling(out string error))
+        {
+            if (!automaticConfigurationErrorReported)
+            {
+                ReportFailure(error);
+                automaticConfigurationErrorReported = true;
+            }
+
+            return;
+        }
+
+        if (automaticConfigurationErrorReported)
+        {
+            automaticConfigurationErrorReported = false;
+            firstAutomaticUpdatePending = false;
+            ResetAutomaticCountdown();
+            return;
+        }
+
+        if (firstAutomaticUpdatePending)
+        {
+            firstAutomaticUpdatePending = false;
+            ResetAutomaticCountdown();
+
+            if (requestRoundOnStart)
+            {
+                if (!TryStartArenaRound())
+                {
+                    ResetAutomaticCountdown();
+                }
+
+                return;
+            }
+        }
+
+        int simulatedMinutes = worldClock.MinutesAdvancedThisFrame;
+        if (simulatedMinutes <= 0)
+        {
+            return;
+        }
+
+        minutesUntilNextRound = Mathf.Max(
+            0,
+            minutesUntilNextRound - simulatedMinutes);
+
+        if (minutesUntilNextRound == 0 && !TryStartArenaRound())
+        {
+            ResetAutomaticCountdown();
+        }
+    }
+
     [ContextMenu("Request Arena LLM Round (Debug)")]
     private void RequestArenaLlmRoundDebug()
+    {
+        TryStartArenaRound();
+    }
+
+    private bool TryStartArenaRound()
     {
         if (!Application.isPlaying)
         {
             ReportFailure(
                 "Arena LLM rounds are available only during Play Mode.");
-            return;
+            return false;
         }
 
         if (roundActive)
         {
             ReportFailure("An Arena LLM round is already active.");
-            return;
+            return false;
         }
 
         if (!TryValidateConfiguration(
@@ -83,7 +173,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             out string error))
         {
             ReportFailure(error);
-            return;
+            return false;
         }
 
         pauseLease = SimulationPauseCoordinator.Acquire();
@@ -91,7 +181,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         if (!snapshotBuilder.TryBuild(out activeSnapshot, out error))
         {
             FailBeforeRoundOpened($"Snapshot failed: {error}");
-            return;
+            return false;
         }
 
         if (!CitizenIdsMatchSnapshot(
@@ -104,14 +194,14 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             FailBeforeRoundOpened(
                 "Both Arena text interfaces must configure exactly the " +
                 "citizens in the shared snapshot.");
-            return;
+            return false;
         }
 
         if (!sideATextInterface.GenerateObservation())
         {
             FailBeforeRoundOpened(
                 "Side A observation generation failed.");
-            return;
+            return false;
         }
 
         sideAObservation = sideATextInterface.LatestObservation;
@@ -120,7 +210,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         {
             FailBeforeRoundOpened(
                 "Side B observation generation failed.");
-            return;
+            return false;
         }
 
         sideBObservation = sideBTextInterface.LatestObservation;
@@ -130,14 +220,14 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         {
             FailBeforeRoundOpened(
                 "Both Arena observations must be non-empty.");
-            return;
+            return false;
         }
 
         if (!coordinator.TryBeginRound(out int roundId))
         {
             FailBeforeRoundOpened(
                 "Arena decision coordinator could not open a round.");
-            return;
+            return false;
         }
 
         currentArenaRoundId = roundId;
@@ -154,6 +244,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         StartRequest(ArenaSide.A, roundId);
         StartRequest(ArenaSide.B, roundId);
+        return true;
     }
 
     [ContextMenu("Retry Pending Arena Requests (Debug)")]
@@ -334,6 +425,32 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         error = null;
         return true;
+    }
+
+    private bool TryValidateAutomaticScheduling(out string error)
+    {
+        if (worldClock == null)
+        {
+            error = "Automatic Arena rounds require a WorldClock.";
+            return false;
+        }
+
+        if (roundIntervalMinutes <= 0)
+        {
+            error =
+                "Arena round interval minutes must be greater than zero.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private void ResetAutomaticCountdown()
+    {
+        minutesUntilNextRound = roundIntervalMinutes > 0
+            ? roundIntervalMinutes
+            : 0;
     }
 
     private static bool CitizenReferencesMatch(
@@ -665,6 +782,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             currentArenaRoundId = roundId;
             roundActive = false;
             SyncSubmissionState();
+            ResetAutomaticCountdown();
             latestError = string.Empty;
             latestStatus = $"Arena round {roundId}: applied successfully.";
 

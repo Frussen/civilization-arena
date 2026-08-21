@@ -4,8 +4,6 @@ public class CitizenEmployment : MonoBehaviour
 {
     private const int MinimumAcceptableWage = 5;
 
-    [SerializeField] private WorldClock clock;
-
     private CitizenWorkAssignment workAssignment;
     [SerializeField] private AgentTreasury currentEmployer;
     [SerializeField] private int currentWage;
@@ -27,20 +25,23 @@ public class CitizenEmployment : MonoBehaviour
     {
         if (!payrollRegistered && currentEmployer != null && currentWage > 0)
         {
-            currentEmployer.AddPayrollCommitment(currentWage);
+            currentEmployer.RegisterEmployee(this, currentWage);
             payrollRegistered = true;
         }
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        if (!IsEmployed)
-        {
-            return;
-        }
+        UnregisterCurrentPayroll();
+    }
 
-        int simulatedMinutes = clock.MinutesAdvancedThisFrame;
-        if (simulatedMinutes <= 0)
+    internal void ProcessWage(
+        AgentTreasury expectedEmployer,
+        int simulatedMinutes)
+    {
+        if (expectedEmployer == null ||
+            currentEmployer != expectedEmployer ||
+            simulatedMinutes <= 0)
         {
             return;
         }
@@ -85,12 +86,12 @@ public class CitizenEmployment : MonoBehaviour
             return false;
         }
 
-        if (payrollRegistered && currentEmployer != null)
+        if (payrollRegistered)
         {
-            currentEmployer.RemovePayrollCommitment(currentWage);
+            UnregisterCurrentPayroll();
         }
 
-        employer.AddPayrollCommitment(offeredWage);
+        employer.RegisterEmployee(this, offeredWage);
         payrollRegistered = true;
 
         currentEmployer = employer;
@@ -102,14 +103,25 @@ public class CitizenEmployment : MonoBehaviour
 
     private void ClearEmployment()
     {
-        if (payrollRegistered && currentEmployer != null)
-        {
-            currentEmployer.RemovePayrollCommitment(currentWage);
-        }
-
-        payrollRegistered = false;
+        UnregisterCurrentPayroll();
         currentEmployer = null;
         currentWage = 0;
         workAssignment.Assign(null);
+    }
+
+    private void UnregisterCurrentPayroll()
+    {
+        if (!payrollRegistered)
+        {
+            return;
+        }
+
+        AgentTreasury employer = currentEmployer;
+        payrollRegistered = false;
+
+        if (employer != null)
+        {
+            employer.UnregisterEmployee(this, currentWage);
+        }
     }
 }

@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class CitizenWorker : MonoBehaviour
 {
-    [SerializeField] private WorldClock clock;
     [SerializeField] private CitizenRoutine routine;
 
     private CitizenWorkAssignment workAssignment;
@@ -14,15 +13,17 @@ public class CitizenWorker : MonoBehaviour
         employment = GetComponent<CitizenEmployment>();
     }
 
-    private void Update()
+    internal void ProcessResourceWork(
+        AgentTreasury expectedEmployer,
+        int simulatedMinutes)
     {
         Workplace workplace = workAssignment.CurrentWorkplace;
         AgentTreasury employer = employment.CurrentEmployer;
 
         if (!routine.IsWorkingTime ||
             workplace == null ||
-            employer == null ||
-            clock.MinutesAdvancedThisFrame <= 0 ||
+            employer != expectedEmployer ||
+            simulatedMinutes <= 0 ||
             !workplace.IsWithinWorkArea(transform.position))
         {
             return;
@@ -33,9 +34,6 @@ public class CitizenWorker : MonoBehaviour
 
         if (wonder != null)
         {
-            wonder.ContributeLabor(
-                employer,
-                clock.MinutesAdvancedThisFrame);
             return;
         }
 
@@ -48,8 +46,33 @@ public class CitizenWorker : MonoBehaviour
         }
 
         float producedAmount =
-            workplace.Work(clock.MinutesAdvancedThisFrame);
+            workplace.Work(simulatedMinutes);
 
         stockpile.Add(workplace.ResourceType, producedAmount);
+    }
+
+    internal void ProcessWonderWork(
+        AgentTreasury expectedEmployer,
+        int simulatedMinutes)
+    {
+        Workplace workplace = workAssignment.CurrentWorkplace;
+        AgentTreasury employer = employment.CurrentEmployer;
+
+        if (!routine.IsWorkingTime ||
+            workplace == null ||
+            employer != expectedEmployer ||
+            simulatedMinutes <= 0 ||
+            !workplace.IsWithinWorkArea(transform.position))
+        {
+            return;
+        }
+
+        WonderConstruction wonder =
+            workplace.GetComponent<WonderConstruction>();
+
+        if (wonder != null)
+        {
+            wonder.ContributeLabor(employer, simulatedMinutes);
+        }
     }
 }

@@ -16,6 +16,7 @@ public class WorkplaceAllocation
     }
 }
 
+[DefaultExecutionOrder(SimulationExecutionOrder.ManualDecisions)]
 public class ManualAgentController : MonoBehaviour
 {
     [SerializeField] private WorldClock clock;

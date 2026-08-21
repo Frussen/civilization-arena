@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+[DefaultExecutionOrder(SimulationExecutionOrder.SingleAgentDecisions)]
 public class AgentDecisionScheduler : MonoBehaviour
 {
     [SerializeField] private WorldClock worldClock;
