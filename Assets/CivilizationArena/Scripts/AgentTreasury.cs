@@ -56,6 +56,7 @@ public class AgentTreasury : MonoBehaviour
             }
         }
 
+        BeginWorkerTick();
         ProcessWork(simulatedMinutes, processWonderWork: false);
         ProcessWork(simulatedMinutes, processWonderWork: true);
     }
@@ -202,6 +203,18 @@ public class AgentTreasury : MonoBehaviour
             {
                 worker.ProcessResourceWork(this, simulatedMinutes);
             }
+        }
+    }
+
+    private void BeginWorkerTick()
+    {
+        for (int i = 0; i < employeesForTick.Count; i++)
+        {
+            CitizenEmployment employee = employeesForTick[i];
+            CitizenWorker worker = employee != null
+                ? employee.GetComponent<CitizenWorker>()
+                : null;
+            worker?.BeginWorkTick();
         }
     }
 

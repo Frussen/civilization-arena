@@ -3,20 +3,31 @@ using UnityEngine.AI;
 
 public class CitizenMover : MonoBehaviour
 {
+    private static readonly int IsWalkingId =
+        Animator.StringToHash("IsWalking");
+    private static readonly int IsWorkingId =
+        Animator.StringToHash("IsWorking");
+
     private NavMeshAgent agent;
     private Animator animator;
+    private CitizenWorker worker;
     private Transform currentDestination;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        worker = GetComponent<CitizenWorker>();
     }
 
     private void Update()
     {
         bool isWalking = agent.velocity.sqrMagnitude > 0.01f;
-        animator.SetBool("IsWalking", isWalking);
+        bool isWorking = !isWalking &&
+            worker != null &&
+            worker.IsActivelyWorking;
+        animator.SetBool(IsWalkingId, isWalking);
+        animator.SetBool(IsWorkingId, isWorking);
     }
 
     public void MoveTo(Transform destination, float stoppingDistance)

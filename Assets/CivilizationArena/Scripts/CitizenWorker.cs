@@ -6,11 +6,30 @@ public class CitizenWorker : MonoBehaviour
 
     private CitizenWorkAssignment workAssignment;
     private CitizenEmployment employment;
+    private bool workedDuringLatestTick;
+
+    public bool IsActivelyWorking
+    {
+        get
+        {
+            Workplace workplace = workAssignment.CurrentWorkplace;
+            return workedDuringLatestTick &&
+                routine.IsWorkingTime &&
+                employment.CurrentEmployer != null &&
+                workplace != null &&
+                workplace.IsWithinWorkArea(transform.position);
+        }
+    }
 
     private void Awake()
     {
         workAssignment = GetComponent<CitizenWorkAssignment>();
         employment = GetComponent<CitizenEmployment>();
+    }
+
+    internal void BeginWorkTick()
+    {
+        workedDuringLatestTick = false;
     }
 
     internal void ProcessResourceWork(
@@ -49,6 +68,7 @@ public class CitizenWorker : MonoBehaviour
             workplace.Work(simulatedMinutes);
 
         stockpile.Add(workplace.ResourceType, producedAmount);
+        workedDuringLatestTick = producedAmount > 0f;
     }
 
     internal void ProcessWonderWork(
@@ -72,7 +92,10 @@ public class CitizenWorker : MonoBehaviour
 
         if (wonder != null)
         {
+            float laborBefore = wonder.LaborHoursCompleted;
             wonder.ContributeLabor(employer, simulatedMinutes);
+            workedDuringLatestTick =
+                wonder.LaborHoursCompleted > laborBefore;
         }
     }
 }
