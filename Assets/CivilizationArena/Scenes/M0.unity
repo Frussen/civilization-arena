@@ -335,8 +335,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab188d88382db4710af055e286d3fd98, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Workplace
-  resourceType: 0
-  productionPerHour: 10
+  resourceType: 2
+  productionPerHour: 0
   workRadius: 3.5
 --- !u!4 &195692861
 Transform:
@@ -3333,7 +3333,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.14, z: -0.02}
-  m_LocalScale: {x: 0.45, y: 0.5, z: 0.31}
+  m_LocalScale: {x: 0.45, y: 0.5, z: 0.32}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1417027492}
@@ -3626,8 +3626,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 190, y: -100}
-  m_SizeDelta: {x: 360, y: 180}
+  m_AnchoredPosition: {x: 170, y: -90}
+  m_SizeDelta: {x: 300, y: 140}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1288364266
 MonoBehaviour:
@@ -3702,8 +3702,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -190, y: -100}
-  m_SizeDelta: {x: 360, y: 180}
+  m_AnchoredPosition: {x: -170, y: -90}
+  m_SizeDelta: {x: 300, y: 140}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1299057260
 MonoBehaviour:
@@ -4487,8 +4487,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab188d88382db4710af055e286d3fd98, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Workplace
-  resourceType: 0
-  productionPerHour: 10
+  resourceType: 2
+  productionPerHour: 0
   workRadius: 3.5
 --- !u!4 &1896526196
 Transform:

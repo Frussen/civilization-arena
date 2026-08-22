@@ -19,7 +19,7 @@ public class Workplace : MonoBehaviour
 
     public float Work(int simulatedMinutes)
     {
-        if (simulatedMinutes <= 0)
+        if (simulatedMinutes <= 0 || resourceType == ResourceType.None)
         {
             return 0f;
         }
