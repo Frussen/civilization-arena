@@ -1,0 +1,206 @@
+:root {
+    --panel-background: rgb(32, 35, 39);
+    --panel-border: rgb(76, 82, 90);
+    --row-background: rgb(39, 43, 48);
+    --row-alternate: rgb(45, 49, 55);
+    --field-background: rgb(24, 27, 31);
+    --text-primary: rgb(232, 235, 238);
+    --text-secondary: rgb(173, 180, 188);
+    --accent: rgb(207, 158, 54);
+}
+
+.arena-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 42%;
+    padding: 8px 12px;
+    background-color: var(--panel-background);
+    border-top-width: 1px;
+    border-top-color: var(--panel-border);
+    color: var(--text-primary);
+}
+
+.header-row,
+.economy-row,
+.table-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.header-row {
+    min-height: 30px;
+    padding: 2px 0;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+}
+
+.title {
+    width: 210px;
+    min-height: 20px;
+    flex-shrink: 0;
+    color: var(--accent);
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+    font-size: 14px;
+}
+
+.turn-label {
+    flex-grow: 1;
+    min-height: 20px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.time-label {
+    width: 150px;
+    min-height: 20px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    -unity-text-align: middle-right;
+}
+
+.economy-row {
+    min-height: 24px;
+    padding: 2px 5px;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+    background-color: rgb(27, 30, 34);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--panel-border);
+}
+
+.economy-value {
+    flex-grow: 1;
+    min-width: 100px;
+    min-height: 18px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    -unity-text-align: middle-left;
+}
+
+.table-header {
+    min-height: 20px;
+    padding: 0 4px;
+    flex-shrink: 0;
+    background-color: rgb(25, 28, 32);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--panel-border);
+}
+
+.table-header .cell {
+    color: var(--text-secondary);
+    -unity-font-style: bold;
+}
+
+.citizen-scroll {
+    flex-grow: 1;
+    min-height: 56px;
+}
+
+.citizen-row {
+    min-height: 24px;
+    padding: 0 4px;
+    background-color: var(--row-background);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(50, 55, 61);
+}
+
+.citizen-row.alternate {
+    background-color: var(--row-alternate);
+}
+
+.cell {
+    padding-right: 6px;
+    font-size: 12px;
+    color: var(--text-primary);
+    -unity-text-align: middle-left;
+}
+
+.citizen-cell {
+    width: 14%;
+}
+
+.owner-cell,
+.wage-cell,
+.reservation-cell,
+.rest-cell {
+    width: 7%;
+}
+
+.current-job-cell {
+    width: 18%;
+}
+
+.offer-job-cell {
+    width: 24%;
+}
+
+.offer-cell {
+    width: 9%;
+}
+
+.offer-job-field,
+.offer-wage-field {
+    margin: 0 4px 0 0;
+    min-height: 20px;
+}
+
+.offer-job-field > .unity-base-field__input,
+.offer-wage-field > .unity-base-field__input {
+    background-color: var(--field-background);
+}
+
+.empty-row {
+    padding: 8px;
+    color: var(--text-secondary);
+    -unity-font-style: italic;
+}
+
+.submit-button {
+    width: 124px;
+    height: 24px;
+    flex-shrink: 0;
+    margin: 0 0 0 10px;
+    background-color: rgb(151, 105, 25);
+    color: white;
+    -unity-font-style: bold;
+    border-top-color: var(--accent);
+    border-right-color: var(--accent);
+    border-bottom-color: var(--accent);
+    border-left-color: var(--accent);
+}
+
+.submit-button:hover {
+    background-color: rgb(177, 126, 33);
+}
+
+.status-label {
+    height: 18px;
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.status-label.error {
+    color: rgb(245, 105, 105);
+}
+
+.match-result-panel {
+    display: none;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.match-result-title {
+    color: var(--accent);
+    -unity-font-style: bold;
+    font-size: 26px;
+    margin-bottom: 5px;
+}
+
+.match-result-detail {
+    color: var(--text-primary);
+    font-size: 15px;
+}

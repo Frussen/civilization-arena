@@ -1,0 +1,43 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="ArenaManualUI.uss" />
+    <ui:VisualElement name="main-panel" class="arena-panel">
+        <ui:VisualElement class="header-row">
+            <ui:Label text="CIVILIZATION ARENA" class="title" />
+            <ui:Label name="turn-label" text="No manual decision" class="turn-label" />
+            <ui:Label name="time-label" text="—" class="time-label" />
+            <ui:Button name="submit-button" text="SUBMIT TURN" class="submit-button" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="economy-row" class="economy-row">
+            <ui:Label name="gold-label" text="Gold: —" class="economy-value" />
+            <ui:Label name="income-label" text="Income: —" class="economy-value" />
+            <ui:Label name="payroll-label" text="Payroll: —" class="economy-value" />
+            <ui:Label name="net-label" text="Net: —" class="economy-value" />
+            <ui:Label name="wood-label" text="Wood: —" class="economy-value" />
+            <ui:Label name="stone-label" text="Stone: —" class="economy-value" />
+            <ui:Label name="wonder-label" text="Wonder: —" class="economy-value" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="table-header" class="table-header table-row">
+            <ui:Label text="Citizen" class="cell citizen-cell" />
+            <ui:Label text="Owner" class="cell owner-cell" />
+            <ui:Label text="Wage" class="cell wage-cell" />
+            <ui:Label text="Res." class="cell reservation-cell" />
+            <ui:Label text="Rest" class="cell rest-cell" />
+            <ui:Label text="Current job" class="cell current-job-cell" />
+            <ui:Label text="Offer job" class="cell offer-job-cell" />
+            <ui:Label text="Offer" class="cell offer-cell" />
+        </ui:VisualElement>
+
+        <ui:ScrollView name="citizen-scroll" mode="Vertical" class="citizen-scroll">
+            <ui:VisualElement name="citizen-rows" />
+        </ui:ScrollView>
+
+        <ui:VisualElement name="match-result-panel" class="match-result-panel">
+            <ui:Label name="match-result-title" text="MATCH OVER" class="match-result-title" />
+            <ui:Label name="match-result-detail" text="" class="match-result-detail" />
+        </ui:VisualElement>
+
+        <ui:Label name="status-label" text="" class="status-label" />
+    </ui:VisualElement>
+</ui:UXML>
