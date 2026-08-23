@@ -1,21 +1,17 @@
-using System;
-
 public sealed class ArenaActionBatch
 {
-    private string actionA;
-    private string actionB;
-    private bool hasActionA;
-    private bool hasActionB;
+    private ArenaAction actionA;
+    private ArenaAction actionB;
 
-    public string ActionA => actionA;
-    public string ActionB => actionB;
-    public bool HasActionA => hasActionA;
-    public bool HasActionB => hasActionB;
-    public bool IsComplete => hasActionA && hasActionB;
+    public ArenaAction ActionA => actionA;
+    public ArenaAction ActionB => actionB;
+    public bool HasActionA => actionA != null;
+    public bool HasActionB => actionB != null;
+    public bool IsComplete => HasActionA && HasActionB;
 
-    public bool TrySubmit(ArenaSide side, string actionJson)
+    public bool TrySubmit(ArenaSide side, ArenaAction action)
     {
-        if (string.IsNullOrWhiteSpace(actionJson))
+        if (action == null)
         {
             return false;
         }
@@ -23,23 +19,21 @@ public sealed class ArenaActionBatch
         switch (side)
         {
             case ArenaSide.A:
-                if (hasActionA)
+                if (HasActionA)
                 {
                     return false;
                 }
 
-                actionA = actionJson;
-                hasActionA = true;
+                actionA = action;
                 return true;
 
             case ArenaSide.B:
-                if (hasActionB)
+                if (HasActionB)
                 {
                     return false;
                 }
 
-                actionB = actionJson;
-                hasActionB = true;
+                actionB = action;
                 return true;
 
             default:
@@ -51,7 +45,5 @@ public sealed class ArenaActionBatch
     {
         actionA = null;
         actionB = null;
-        hasActionA = false;
-        hasActionB = false;
     }
 }

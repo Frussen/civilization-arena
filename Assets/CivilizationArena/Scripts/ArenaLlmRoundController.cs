@@ -11,10 +11,18 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     [SerializeField] private ArenaMatchController arenaMatchController;
     [SerializeField] private ArenaMatchLogger matchLogger;
 
+    [SerializeField] private AgentControlMode sideAControlMode =
+        AgentControlMode.Api;
     [SerializeField] private AgentTextInterface sideATextInterface;
     [SerializeField] private LlmProviderBehaviour sideAProvider;
+    [SerializeField] private ArenaManualDecisionController
+        sideAManualDecisionController;
+    [SerializeField] private AgentControlMode sideBControlMode =
+        AgentControlMode.Api;
     [SerializeField] private AgentTextInterface sideBTextInterface;
     [SerializeField] private LlmProviderBehaviour sideBProvider;
+    [SerializeField] private ArenaManualDecisionController
+        sideBManualDecisionController;
 
     [SerializeField] private WorldClock worldClock;
     [SerializeField] private bool automaticRoundsEnabled;
@@ -50,6 +58,12 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     private string[] sideAWorkplaceIds;
     private string[] sideBCitizenIds;
     private string[] sideBWorkplaceIds;
+    private AgentControlMode activeSideAControlMode;
+    private AgentControlMode activeSideBControlMode;
+    private LlmProviderBehaviour activeSideAProvider;
+    private LlmProviderBehaviour activeSideBProvider;
+    private ArenaManualDecisionController activeSideAManualController;
+    private ArenaManualDecisionController activeSideBManualController;
     private SimulationPauseLease pauseLease;
     private bool resolvingRound;
     private int lifecycleVersion;
@@ -81,8 +95,14 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     public WorldClock WorldClock => worldClock;
     public AgentTextInterface SideATextInterface => sideATextInterface;
     public AgentTextInterface SideBTextInterface => sideBTextInterface;
+    public AgentControlMode SideAControlMode => sideAControlMode;
+    public AgentControlMode SideBControlMode => sideBControlMode;
     public LlmProviderBehaviour SideAProvider => sideAProvider;
     public LlmProviderBehaviour SideBProvider => sideBProvider;
+    public ArenaManualDecisionController SideAManualDecisionController =>
+        sideAManualDecisionController;
+    public ArenaManualDecisionController SideBManualDecisionController =>
+        sideBManualDecisionController;
 
     private void OnEnable()
     {
@@ -222,7 +242,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return false;
         }
 
-        if (!sideATextInterface.GenerateObservation())
+        if (!sideATextInterface.GenerateArenaObservation())
         {
             FailBeforeRoundOpened(
                 "Side A observation generation failed.");
@@ -231,7 +251,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         sideAObservation = sideATextInterface.LatestObservation;
 
-        if (!sideBTextInterface.GenerateObservation())
+        if (!sideBTextInterface.GenerateArenaObservation())
         {
             FailBeforeRoundOpened(
                 "Side B observation generation failed.");
@@ -248,6 +268,15 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return false;
         }
 
+        string[] roundSideACitizenIds =
+            (string[])configuredSideACitizenIds.Clone();
+        string[] roundSideAWorkplaceIds =
+            (string[])configuredSideAWorkplaceIds.Clone();
+        string[] roundSideBCitizenIds =
+            (string[])configuredSideBCitizenIds.Clone();
+        string[] roundSideBWorkplaceIds =
+            (string[])configuredSideBWorkplaceIds.Clone();
+
         if (!coordinator.TryBeginRound(out int roundId))
         {
             FailBeforeRoundOpened(
@@ -257,14 +286,32 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         currentArenaRoundId = roundId;
         roundActive = true;
-        sideACitizenIds = configuredSideACitizenIds;
-        sideAWorkplaceIds = configuredSideAWorkplaceIds;
-        sideBCitizenIds = configuredSideBCitizenIds;
-        sideBWorkplaceIds = configuredSideBWorkplaceIds;
+        sideACitizenIds = roundSideACitizenIds;
+        sideAWorkplaceIds = roundSideAWorkplaceIds;
+        sideBCitizenIds = roundSideBCitizenIds;
+        sideBWorkplaceIds = roundSideBWorkplaceIds;
+        activeSideAControlMode = sideAControlMode;
+        activeSideBControlMode = sideBControlMode;
+        activeSideAProvider =
+            activeSideAControlMode == AgentControlMode.Api
+                ? sideAProvider
+                : null;
+        activeSideBProvider =
+            activeSideBControlMode == AgentControlMode.Api
+                ? sideBProvider
+                : null;
+        activeSideAManualController =
+            activeSideAControlMode == AgentControlMode.Manual
+                ? sideAManualDecisionController
+                : null;
+        activeSideBManualController =
+            activeSideBControlMode == AgentControlMode.Manual
+                ? sideBManualDecisionController
+                : null;
         latestSideAActionJson = string.Empty;
         latestSideBActionJson = string.Empty;
         latestError = string.Empty;
-        latestStatus = $"Arena round {roundId}: requesting both actions.";
+        latestStatus = $"Arena round {roundId}: awaiting both actions.";
         sideAProviderAttempt = 0;
         sideBProviderAttempt = 0;
         SyncSubmissionState();
@@ -279,8 +326,23 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 nextTiePriority);
         }
 
-        StartRequest(ArenaSide.A, roundId);
-        StartRequest(ArenaSide.B, roundId);
+        if (!TryArmManualSide(ArenaSide.A, roundId, out error) ||
+            !TryArmManualSide(ArenaSide.B, roundId, out error))
+        {
+            AbortStartedRound($"Manual Arena arming failed: {error}");
+            return false;
+        }
+
+        if (activeSideAControlMode == AgentControlMode.Api)
+        {
+            StartRequest(ArenaSide.A, roundId);
+        }
+
+        if (activeSideBControlMode == AgentControlMode.Api)
+        {
+            StartRequest(ArenaSide.B, roundId);
+        }
+
         return true;
     }
 
@@ -302,12 +364,16 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         bool requested = false;
 
-        if (!coordinator.HasActionA && !sideARequestInFlight)
+        if (activeSideAControlMode == AgentControlMode.Api &&
+            !coordinator.HasActionA &&
+            !sideARequestInFlight)
         {
             requested |= StartRequest(ArenaSide.A, currentArenaRoundId);
         }
 
-        if (!coordinator.HasActionB && !sideBRequestInFlight)
+        if (activeSideBControlMode == AgentControlMode.Api &&
+            !coordinator.HasActionB &&
+            !sideBRequestInFlight)
         {
             requested |= StartRequest(ArenaSide.B, currentArenaRoundId);
         }
@@ -317,8 +383,8 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             latestStatus = coordinator.IsReady
                 ? $"Arena round {currentArenaRoundId}: both actions are " +
                   "already submitted; no request was sent."
-                : $"Arena round {currentArenaRoundId}: pending requests " +
-                  "are already in flight.";
+                : $"Arena round {currentArenaRoundId}: waiting for " +
+                  "pending Manual submissions or Api requests.";
         }
     }
 
@@ -338,11 +404,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             roundApplier == null ||
             arenaMatchController == null ||
             sideATextInterface == null ||
-            sideAProvider == null ||
-            sideBTextInterface == null ||
-            sideBProvider == null)
+            sideBTextInterface == null)
         {
-            error = "Arena LLM round references are not fully configured.";
+            error = "Arena round references are not fully configured.";
             return false;
         }
 
@@ -352,18 +416,65 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return false;
         }
 
-        if (sideATextInterface == sideBTextInterface ||
-            sideAProvider == sideBProvider)
+        if (!IsValidControlMode(sideAControlMode) ||
+            !IsValidControlMode(sideBControlMode))
         {
-            error =
-                "Arena sides must use different text interfaces and providers.";
+            error = "Arena side control modes are invalid.";
             return false;
         }
 
-        if (!sideAProvider.isActiveAndEnabled ||
-            !sideBProvider.isActiveAndEnabled)
+        if (sideATextInterface == sideBTextInterface)
         {
-            error = "Both Arena LLM providers must be active and enabled.";
+            error = "Arena sides must use different text interfaces.";
+            return false;
+        }
+
+        if (sideAControlMode == AgentControlMode.Api &&
+            (sideAProvider == null || !sideAProvider.isActiveAndEnabled))
+        {
+            error = "Side A Api provider must be active and enabled.";
+            return false;
+        }
+
+        if (sideBControlMode == AgentControlMode.Api &&
+            (sideBProvider == null || !sideBProvider.isActiveAndEnabled))
+        {
+            error = "Side B Api provider must be active and enabled.";
+            return false;
+        }
+
+        if (sideAControlMode == AgentControlMode.Api &&
+            sideBControlMode == AgentControlMode.Api &&
+            sideAProvider == sideBProvider)
+        {
+            error = "Api Arena sides must use different providers.";
+            return false;
+        }
+
+        if (sideAControlMode == AgentControlMode.Manual &&
+            !CanArmManualController(sideAManualDecisionController))
+        {
+            error =
+                "Side A Manual decision controller must be active, enabled, " +
+                "and available for a new round.";
+            return false;
+        }
+
+        if (sideBControlMode == AgentControlMode.Manual &&
+            !CanArmManualController(sideBManualDecisionController))
+        {
+            error =
+                "Side B Manual decision controller must be active, enabled, " +
+                "and available for a new round.";
+            return false;
+        }
+
+        if (sideAControlMode == AgentControlMode.Manual &&
+            sideBControlMode == AgentControlMode.Manual &&
+            sideAManualDecisionController == sideBManualDecisionController)
+        {
+            error =
+                "Manual Arena sides must use different decision controllers.";
             return false;
         }
 
@@ -506,6 +617,133 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         return true;
     }
 
+    private static bool IsValidControlMode(AgentControlMode controlMode)
+    {
+        return controlMode == AgentControlMode.Api ||
+            controlMode == AgentControlMode.Manual;
+    }
+
+    private static bool CanArmManualController(
+        ArenaManualDecisionController manualController)
+    {
+        if (manualController == null ||
+            !manualController.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        return manualController.Status == ArenaManualDecisionStatus.Idle ||
+            manualController.Status == ArenaManualDecisionStatus.Completed ||
+            manualController.Status == ArenaManualDecisionStatus.Aborted;
+    }
+
+    private bool TryArmManualSide(
+        ArenaSide side,
+        int roundId,
+        out string error)
+    {
+        AgentControlMode controlMode;
+        ArenaManualDecisionController manualController;
+        string observation;
+        string[] citizenIds;
+        string[] workplaceIds;
+
+        if (side == ArenaSide.A)
+        {
+            controlMode = activeSideAControlMode;
+            manualController = activeSideAManualController;
+            observation = sideAObservation;
+            citizenIds = sideACitizenIds;
+            workplaceIds = sideAWorkplaceIds;
+        }
+        else if (side == ArenaSide.B)
+        {
+            controlMode = activeSideBControlMode;
+            manualController = activeSideBManualController;
+            observation = sideBObservation;
+            citizenIds = sideBCitizenIds;
+            workplaceIds = sideBWorkplaceIds;
+        }
+        else
+        {
+            error = "Cannot arm an invalid Arena side.";
+            return false;
+        }
+
+        if (controlMode == AgentControlMode.Api)
+        {
+            error = null;
+            return true;
+        }
+
+        return manualController.TryArmForRound(
+            roundId,
+            side,
+            observation,
+            citizenIds,
+            workplaceIds,
+            TrySubmitCanonicalAction,
+            out error);
+    }
+
+    private bool CompleteManualSides(int roundId, out string error)
+    {
+        if (activeSideAControlMode == AgentControlMode.Manual &&
+            !activeSideAManualController.CompleteRound(roundId, out error))
+        {
+            error = $"Side A Manual completion failed: {error}";
+            return false;
+        }
+
+        if (activeSideBControlMode == AgentControlMode.Manual &&
+            !activeSideBManualController.CompleteRound(roundId, out error))
+        {
+            error = $"Side B Manual completion failed: {error}";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private void AbortManualSides(int roundId)
+    {
+        AbortManualSide(activeSideAManualController, roundId);
+        AbortManualSide(activeSideBManualController, roundId);
+    }
+
+    private static void AbortManualSide(
+        ArenaManualDecisionController manualController,
+        int roundId)
+    {
+        if (manualController == null ||
+            manualController.CurrentRoundId != roundId ||
+            (manualController.Status !=
+                ArenaManualDecisionStatus.WaitingForSubmission &&
+             manualController.Status != ArenaManualDecisionStatus.Submitted))
+        {
+            return;
+        }
+
+        manualController.AbortRound(roundId, out _);
+    }
+
+    private void AbortStartedRound(string error)
+    {
+        AbortManualSides(currentArenaRoundId);
+
+        if (coordinator.IsRoundOpen)
+        {
+            coordinator.TryAbortRound();
+        }
+
+        roundActive = false;
+        SyncSubmissionState();
+        ClearActiveRoundData();
+        ReportFailure(error);
+        ReleasePauseLease();
+    }
+
     private void ResetAutomaticCountdown()
     {
         minutesUntilNextRound = roundIntervalMinutes > 0
@@ -599,6 +837,14 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return false;
         }
 
+        if ((side == ArenaSide.A &&
+             activeSideAControlMode != AgentControlMode.Api) ||
+            (side == ArenaSide.B &&
+             activeSideBControlMode != AgentControlMode.Api))
+        {
+            return false;
+        }
+
         LlmProviderBehaviour provider;
         string observation;
         string[] citizenIds;
@@ -616,7 +862,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             sideARequestInFlight = true;
             requestAttempt = ++sideARequestVersion;
             providerAttempt = ++sideAProviderAttempt;
-            provider = sideAProvider;
+            provider = activeSideAProvider;
             observation = sideAObservation;
             citizenIds = sideACitizenIds;
             workplaceIds = sideAWorkplaceIds;
@@ -631,7 +877,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             sideBRequestInFlight = true;
             requestAttempt = ++sideBRequestVersion;
             providerAttempt = ++sideBProviderAttempt;
-            provider = sideBProvider;
+            provider = activeSideBProvider;
             observation = sideBObservation;
             citizenIds = sideBCitizenIds;
             workplaceIds = sideBWorkplaceIds;
@@ -642,7 +888,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return false;
         }
 
-        if (!provider.isActiveAndEnabled)
+        if (provider == null || !provider.isActiveAndEnabled)
         {
             SetRequestInFlight(side, false);
             RecordProviderResult(
@@ -756,8 +1002,7 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             result.ActionJson,
             null);
 
-        if (string.IsNullOrWhiteSpace(result.ActionJson) ||
-            !coordinator.TrySubmit(roundId, side, result.ActionJson))
+        if (string.IsNullOrWhiteSpace(result.ActionJson))
         {
             ReportSideFailure(
                 side,
@@ -765,13 +1010,98 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return;
         }
 
+        if (!ArenaActionParser.TryParse(
+                result.ActionJson,
+                out ArenaAction action,
+                out string error))
+        {
+            ReportSideFailure(
+                side,
+                $"provider action parse failed: {error}");
+            return;
+        }
+
+        string previousActionJson;
+
         if (side == ArenaSide.A)
         {
+            previousActionJson = latestSideAActionJson;
             latestSideAActionJson = result.ActionJson;
         }
         else
         {
+            previousActionJson = latestSideBActionJson;
             latestSideBActionJson = result.ActionJson;
+        }
+
+        if (!TrySubmitCanonicalAction(
+                roundId,
+                side,
+                action,
+                out error))
+        {
+            if (side == ArenaSide.A)
+            {
+                latestSideAActionJson = previousActionJson;
+            }
+            else
+            {
+                latestSideBActionJson = previousActionJson;
+            }
+
+            ReportSideFailure(
+                side,
+                $"provider action submission failed: {error}");
+            return;
+        }
+    }
+
+    private bool TrySubmitCanonicalAction(
+        int roundId,
+        ArenaSide side,
+        ArenaAction action,
+        out string error)
+    {
+        if (!roundActive ||
+            !coordinator.IsRoundOpen ||
+            coordinator.CurrentRoundId != roundId)
+        {
+            error = "Arena round is not active or the round ID is stale.";
+            return false;
+        }
+
+        string[] allowedCitizenIds;
+        string[] allowedWorkplaceIds;
+
+        if (side == ArenaSide.A)
+        {
+            allowedCitizenIds = sideACitizenIds;
+            allowedWorkplaceIds = sideAWorkplaceIds;
+        }
+        else if (side == ArenaSide.B)
+        {
+            allowedCitizenIds = sideBCitizenIds;
+            allowedWorkplaceIds = sideBWorkplaceIds;
+        }
+        else
+        {
+            error = "Arena action submission side must be A or B.";
+            return false;
+        }
+
+        if (!ArenaActionValidator.TryValidate(
+                action,
+                allowedCitizenIds,
+                allowedWorkplaceIds,
+                out error))
+        {
+            return false;
+        }
+
+        if (!coordinator.TrySubmit(roundId, side, action))
+        {
+            error = "Arena action is duplicate or could not be submitted.";
+            return false;
         }
 
         SyncSubmissionState();
@@ -782,6 +1112,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             latestError = string.Empty;
             ResolveAndApply(roundId);
         }
+
+        error = null;
+        return true;
     }
 
     private bool IsCurrentRequest(
@@ -821,33 +1154,11 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
 
         try
         {
-            if (!ArenaActionParser.TryParse(
-                coordinator.ActionA,
-                out ArenaAction actionA,
-                out string error))
-            {
-                FailResolvedRound(
-                    "parse_a",
-                    $"Side A action parse failed: {error}");
-                return;
-            }
-
-            if (!ArenaActionParser.TryParse(
-                coordinator.ActionB,
-                out ArenaAction actionB,
-                out error))
-            {
-                FailResolvedRound(
-                    "parse_b",
-                    $"Side B action parse failed: {error}");
-                return;
-            }
-
             if (!ArenaOfferPairing.TryBuild(
-                actionA,
-                actionB,
+                coordinator.ActionA,
+                coordinator.ActionB,
                 out IReadOnlyList<ArenaCitizenOfferPair> pairs,
-                out error))
+                out string error))
             {
                 FailResolvedRound("pairing", $"Offer pairing failed: {error}");
                 return;
@@ -880,6 +1191,12 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             }
 
             nextTiePriority = resolution.FinalTiePriority;
+
+            if (!CompleteManualSides(roundId, out error))
+            {
+                FailResolvedRound("manual_complete", error);
+                return;
+            }
 
             if (!coordinator.TryCloseRound())
             {
@@ -1001,6 +1318,10 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         sideAWorkplaceIds = null;
         sideBCitizenIds = null;
         sideBWorkplaceIds = null;
+        activeSideAProvider = null;
+        activeSideBProvider = null;
+        activeSideAManualController = null;
+        activeSideBManualController = null;
         sideARequestInFlight = false;
         sideBRequestInFlight = false;
     }
@@ -1022,18 +1343,23 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         sideARequestVersion++;
         sideBRequestVersion++;
 
-        if (sideARequestInFlight && sideAProvider != null)
+        if (sideARequestInFlight && activeSideAProvider != null)
         {
-            sideAProvider.CancelRequest();
+            activeSideAProvider.CancelRequest();
         }
 
-        if (sideBRequestInFlight && sideBProvider != null)
+        if (sideBRequestInFlight && activeSideBProvider != null)
         {
-            sideBProvider.CancelRequest();
+            activeSideBProvider.CancelRequest();
         }
 
         sideARequestInFlight = false;
         sideBRequestInFlight = false;
+
+        if (roundActive)
+        {
+            AbortManualSides(currentArenaRoundId);
+        }
 
         if (coordinator.IsRoundOpen)
         {

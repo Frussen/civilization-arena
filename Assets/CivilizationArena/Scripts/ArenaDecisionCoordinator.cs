@@ -7,8 +7,8 @@ public sealed class ArenaDecisionCoordinator
     public int CurrentRoundId => currentRoundId;
     public bool IsRoundOpen => isRoundOpen;
     public bool IsReady => isRoundOpen && actionBatch.IsComplete;
-    public string ActionA => actionBatch.ActionA;
-    public string ActionB => actionBatch.ActionB;
+    public ArenaAction ActionA => actionBatch.ActionA;
+    public ArenaAction ActionB => actionBatch.ActionB;
     public bool HasActionA => actionBatch.HasActionA;
     public bool HasActionB => actionBatch.HasActionB;
 
@@ -30,14 +30,14 @@ public sealed class ArenaDecisionCoordinator
     public bool TrySubmit(
         int roundId,
         ArenaSide side,
-        string actionJson)
+        ArenaAction action)
     {
         if (!isRoundOpen || roundId != currentRoundId)
         {
             return false;
         }
 
-        return actionBatch.TrySubmit(side, actionJson);
+        return actionBatch.TrySubmit(side, action);
     }
 
     public bool TryCloseRound()

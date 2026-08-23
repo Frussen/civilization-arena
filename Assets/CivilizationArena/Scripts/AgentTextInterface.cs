@@ -71,9 +71,36 @@ public class AgentTextInterface : MonoBehaviour
             return false;
         }
 
-        if (!TryBuildObservation(out string observation, out string error))
+        if (!TryBuildObservation(
+                false,
+                out string observation,
+                out string error))
         {
             Debug.LogWarning($"Observation failed: {error}", this);
+            return false;
+        }
+
+        latestObservation = observation;
+        Debug.Log(latestObservation, this);
+        return true;
+    }
+
+    public bool GenerateArenaObservation()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning(
+                "Generate Arena Observation is available only during Play Mode.",
+                this);
+            return false;
+        }
+
+        if (!TryBuildObservation(
+                true,
+                out string observation,
+                out string error))
+        {
+            Debug.LogWarning($"Arena observation failed: {error}", this);
             return false;
         }
 
@@ -193,15 +220,9 @@ public class AgentTextInterface : MonoBehaviour
             return false;
         }
 
-        if (!TryValidateConfiguration(out _, out error))
+        if (clock == null || treasury == null)
         {
-            return false;
-        }
-
-        if (decisionScheduler.ControlMode != AgentControlMode.Api)
-        {
-            error =
-                "Arena LLM observations require Api action semantics.";
+            error = "Arena observation references are not fully configured.";
             return false;
         }
 
@@ -345,19 +366,25 @@ public class AgentTextInterface : MonoBehaviour
     }
 
     private bool TryBuildObservation(
+        bool useArenaSemantics,
         out string observation,
         out string error)
     {
         observation = null;
 
-        if (!TryValidateConfiguration(out _, out error))
+        bool configurationIsValid = useArenaSemantics
+            ? TryValidateArenaSideConfiguration(treasury, out error)
+            : TryValidateConfiguration(out _, out error);
+
+        if (!configurationIsValid)
         {
             return false;
         }
 
         float payrollPerHour = treasury.CurrentPayrollPerHour;
-        bool isApiMode = decisionScheduler != null &&
-            decisionScheduler.ControlMode == AgentControlMode.Api;
+        bool useOfferSemantics = useArenaSemantics ||
+            (decisionScheduler != null &&
+             decisionScheduler.ControlMode == AgentControlMode.Api);
 
         float remainingLabor = Mathf.Max(
             0f,
@@ -392,7 +419,7 @@ public class AgentTextInterface : MonoBehaviour
             $"netGoldPerHour={Format(treasury.GoldIncomePerHour - payrollPerHour)}");
         text.AppendLine($"stone={Format(stockpile.Stone)}");
         text.AppendLine($"wood={Format(stockpile.Wood)}");
-        if (!isApiMode)
+        if (!useOfferSemantics)
         {
             text.AppendLine(
                 $"maximumOfferWage={manualController.MaximumOfferWage}");
@@ -403,7 +430,7 @@ public class AgentTextInterface : MonoBehaviour
             "unemployedHire: offeredWage must be >= reservationWage");
         text.AppendLine(
             "employedReassignment: offeredWage must be >= currentWage + 1");
-        if (!isApiMode)
+        if (!useOfferSemantics)
         {
             text.AppendLine(
                 "maximumOfferWage: hard ceiling on hiring and reassignment offers");
@@ -414,7 +441,7 @@ public class AgentTextInterface : MonoBehaviour
             "contractCoverage: currentGold must be >= " +
             "projectedPayrollPerHour * payrollCoverageHours");
         text.AppendLine("coverageFunds: checked but not reserved");
-        if (!isApiMode)
+        if (!useOfferSemantics)
         {
             text.AppendLine(
                 "desiredWorkerCounts: targets only; workers move only through " +
@@ -440,7 +467,7 @@ public class AgentTextInterface : MonoBehaviour
         {
             int actualWorkers = CountActualWorkers(binding.Workplace);
 
-            if (isApiMode)
+            if (useOfferSemantics)
             {
                 text.AppendLine($"{binding.Id}: actual={actualWorkers}");
             }
@@ -460,7 +487,7 @@ public class AgentTextInterface : MonoBehaviour
             AppendCitizenObservation(text, citizen);
         }
 
-        if (isApiMode)
+        if (useOfferSemantics)
         {
             text.AppendLine("apiAction:");
             text.AppendLine("make zero or more explicit employment offers");
