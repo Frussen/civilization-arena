@@ -6,7 +6,10 @@ using UnityEngine;
 [CustomEditor(typeof(ArenaManualDecisionController))]
 public sealed class ArenaManualDecisionControllerEditor : Editor
 {
+    private const float ObservationViewportHeight = 220f;
+
     private Vector2 observationScroll;
+    private string lastCapturedObservation;
 
     public override void OnInspectorGUI()
     {
@@ -121,17 +124,50 @@ public sealed class ArenaManualDecisionControllerEditor : Editor
 
         string displayedObservation = observation ?? string.Empty;
 
-        using (new EditorGUI.DisabledScope(true))
-        {
-            observationScroll = EditorGUILayout.BeginScrollView(
-                observationScroll,
-                GUILayout.MinHeight(160f),
-                GUILayout.MaxHeight(260f));
-            EditorGUILayout.TextArea(
+        if (!string.Equals(
                 displayedObservation,
-                GUILayout.ExpandHeight(true));
-            EditorGUILayout.EndScrollView();
+                lastCapturedObservation,
+                StringComparison.Ordinal))
+        {
+            observationScroll = Vector2.zero;
+            lastCapturedObservation = displayedObservation;
         }
+
+        Rect viewportRect = GUILayoutUtility.GetRect(
+            0f,
+            ObservationViewportHeight,
+            GUILayout.ExpandWidth(true));
+        GUIStyle textStyle = EditorStyles.textArea;
+        float scrollbarWidth = Mathf.Max(
+            15f,
+            GUI.skin.verticalScrollbar.fixedWidth);
+        float contentWidth = Mathf.Max(
+            100f,
+            viewportRect.width - scrollbarWidth - 4f);
+        float bottomAllowance =
+            EditorGUIUtility.singleLineHeight * 0.5f;
+        float contentHeight = Mathf.Max(
+            viewportRect.height,
+            textStyle.CalcHeight(
+                new GUIContent(displayedObservation),
+                contentWidth) + bottomAllowance);
+        Rect contentRect = new Rect(
+            0f,
+            0f,
+            contentWidth,
+            contentHeight);
+
+        observationScroll = GUI.BeginScrollView(
+            viewportRect,
+            observationScroll,
+            contentRect,
+            false,
+            true);
+        EditorGUI.SelectableLabel(
+            contentRect,
+            displayedObservation,
+            textStyle);
+        GUI.EndScrollView();
     }
 
     private static void DrawStrategyNote(

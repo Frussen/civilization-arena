@@ -5,9 +5,9 @@ using UnityEngine;
 public sealed class ArenaCitizenTeamVisualController : MonoBehaviour
 {
     private static readonly Vector3 ShirtLocalPosition =
-        new Vector3(0f, 0.14f, -0.03f);
+        new Vector3(0f, 0.14f, -0.02f);
     private static readonly Vector3 ShirtLocalScale =
-        new Vector3(0.45f, 0.5f, 0.29f);
+        new Vector3(0.45f, 0.5f, 0.3f);
 
     [SerializeField] private ArenaRoundSnapshotBuilder snapshotBuilder;
     [SerializeField] private Material citizenTeamRed;

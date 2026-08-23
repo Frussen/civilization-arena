@@ -494,7 +494,7 @@ public class AgentTextInterface : MonoBehaviour
             text.AppendLine("offerFields: citizenId, workplaceId, wage");
             text.AppendLine("employer: implicit=this_agent");
             text.AppendLine(
-                "offersProcessed: sequentially in supplied order");
+                "offersProcessed: in ordinal CitizenId order");
             text.Append(
                 "rejectedOffers: valid gameplay outcomes; " +
                 "accepted/rejected individually");
@@ -534,10 +534,8 @@ public class AgentTextInterface : MonoBehaviour
             ? assignment.CurrentWorkplace
             : null;
 
-        CitizenActivity activity = GetCitizenActivity(
-            citizen,
-            routine,
-            workplace);
+        CitizenActivity activity =
+            CitizenActivityClassifier.GetActivity(citizen);
 
         text.AppendLine(
             $"{citizen.name}: status={status}, employer={employerRelation}, " +
@@ -545,36 +543,6 @@ public class AgentTextInterface : MonoBehaviour
             $"reservation={citizen.ReservationWage}, shift={shift}, " +
             $"activity={activity}, " +
             $"workplace={GetWorkplaceId(workplace)}");
-    }
-
-    private static CitizenActivity GetCitizenActivity(
-        CitizenEmployment citizen,
-        CitizenRoutine routine,
-        Workplace workplace)
-    {
-        if (!citizen.IsEmployed)
-        {
-            return CitizenActivity.Unemployed;
-        }
-
-        if (routine == null)
-        {
-            return CitizenActivity.Idle;
-        }
-
-        if (!routine.IsWorkingTime)
-        {
-            return CitizenActivity.Resting;
-        }
-
-        if (workplace == null)
-        {
-            return CitizenActivity.Idle;
-        }
-
-        return workplace.IsWithinWorkArea(citizen.transform.position)
-            ? CitizenActivity.Working
-            : CitizenActivity.Traveling;
     }
 
     private AgentStrategicAction BuildActionReminder()

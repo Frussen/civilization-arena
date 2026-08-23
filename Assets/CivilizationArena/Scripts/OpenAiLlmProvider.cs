@@ -26,7 +26,7 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
         "An unemployed citizen requires at least their reservation wage.\n" +
         "Every new or renegotiated contract must satisfy the employer's payroll " +
         "coverage requirement.\n" +
-        "Offers are processed sequentially in the supplied order, and rejection " +
+        "Offers are resolved in ordinal CitizenId order, and rejection " +
         "is a possible gameplay outcome.\n" +
         "Consider current time, work shift, activity, wage, reservation wage, " +
         "current employer and Workplace, resources, payroll, and Wonder " +

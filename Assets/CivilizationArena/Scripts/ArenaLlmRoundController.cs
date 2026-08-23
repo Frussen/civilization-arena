@@ -323,7 +323,9 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
                 activeSnapshot,
                 sideAObservation,
                 sideBObservation,
-                nextTiePriority);
+                nextTiePriority,
+                activeSideAControlMode,
+                activeSideBControlMode);
         }
 
         if (!TryArmManualSide(ArenaSide.A, roundId, out error) ||
@@ -1102,6 +1104,18 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
         {
             error = "Arena action is duplicate or could not be submitted.";
             return false;
+        }
+
+        if (matchLogger != null && matchLogger.isActiveAndEnabled)
+        {
+            AgentControlMode source = side == ArenaSide.A
+                ? activeSideAControlMode
+                : activeSideBControlMode;
+            matchLogger.RecordActionSubmitted(
+                roundId,
+                side,
+                source,
+                action);
         }
 
         SyncSubmissionState();

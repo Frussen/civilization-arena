@@ -42,7 +42,9 @@ public sealed class ArenaMatchLogger : MonoBehaviour
         ArenaRoundSnapshot snapshot,
         string observationA,
         string observationB,
-        ArenaSide tiePriorityBefore)
+        ArenaSide tiePriorityBefore,
+        AgentControlMode sourceA,
+        AgentControlMode sourceB)
     {
         if (!EnsureMatchStarted())
         {
@@ -54,10 +56,32 @@ public sealed class ArenaMatchLogger : MonoBehaviour
         eventData.roundId = roundId;
         SetSimulatedTime(eventData);
         eventData.tiePriorityBefore = tiePriorityBefore.ToString();
+        eventData.sourceA = sourceA.ToString();
+        eventData.sourceB = sourceB.ToString();
         eventData.observationA = observationA;
         eventData.observationB = observationB;
         eventData.state = TryBuildState(snapshot, out string stateError);
         eventData.stateError = stateError;
+        WriteEvent(eventData);
+    }
+
+    public void RecordActionSubmitted(
+        int roundId,
+        ArenaSide side,
+        AgentControlMode source,
+        ArenaAction action)
+    {
+        if (!EnsureMatchStarted() || action == null)
+        {
+            return;
+        }
+
+        ActionSubmittedEvent eventData = NewActionSubmittedEvent();
+        eventData.roundId = roundId;
+        eventData.side = side.ToString();
+        eventData.source = source.ToString();
+        eventData.strategyNote = action.StrategyNote;
+        eventData.offers = BuildActionOffers(action);
         WriteEvent(eventData);
     }
 
@@ -291,10 +315,16 @@ public sealed class ArenaMatchLogger : MonoBehaviour
                 roundController.RequestRoundOnStart;
             eventData.initialTiePriority =
                 roundController.NextTiePriority.ToString();
-            eventData.providerA = BuildProvider(
-                roundController.SideAProvider);
-            eventData.providerB = BuildProvider(
-                roundController.SideBProvider);
+            AgentControlMode sourceA = roundController.SideAControlMode;
+            AgentControlMode sourceB = roundController.SideBControlMode;
+            eventData.sourceA = sourceA.ToString();
+            eventData.sourceB = sourceB.ToString();
+            eventData.providerA = sourceA == AgentControlMode.Api
+                ? BuildProvider(roundController.SideAProvider)
+                : null;
+            eventData.providerB = sourceB == AgentControlMode.Api
+                ? BuildProvider(roundController.SideBProvider)
+                : null;
             SetSimulatedTime(eventData);
 
             if (snapshotBuilder.TryBuild(
@@ -493,6 +523,25 @@ public sealed class ArenaMatchLogger : MonoBehaviour
             };
     }
 
+    private static ActionOfferLog[] BuildActionOffers(ArenaAction action)
+    {
+        ActionOfferLog[] offers =
+            new ActionOfferLog[action.Offers.Count];
+
+        for (int i = 0; i < action.Offers.Count; i++)
+        {
+            ArenaEmploymentOffer offer = action.Offers[i];
+            offers[i] = new ActionOfferLog
+            {
+                citizenId = offer.CitizenId,
+                workplaceId = offer.WorkplaceId,
+                wage = offer.Wage
+            };
+        }
+
+        return offers;
+    }
+
     private static EligibilityLog BuildEligibility(
         ArenaOfferEligibilityResult eligibility)
     {
@@ -647,6 +696,16 @@ public sealed class ArenaMatchLogger : MonoBehaviour
         };
     }
 
+    private ActionSubmittedEvent NewActionSubmittedEvent()
+    {
+        return new ActionSubmittedEvent
+        {
+            schemaVersion = SchemaVersion,
+            @event = "action_submitted",
+            runId = runId
+        };
+    }
+
     private RoundResultEvent NewRoundResultEvent()
     {
         return new RoundResultEvent
@@ -720,6 +779,8 @@ public sealed class ArenaMatchLogger : MonoBehaviour
         public int roundIntervalMinutes;
         public bool requestRoundOnStart;
         public string initialTiePriority;
+        public string sourceA;
+        public string sourceB;
         public ProviderLog providerA;
         public ProviderLog providerB;
         public MatchStateLog initialState;
@@ -731,6 +792,8 @@ public sealed class ArenaMatchLogger : MonoBehaviour
     {
         public int roundId;
         public string tiePriorityBefore;
+        public string sourceA;
+        public string sourceB;
         public string observationA;
         public string observationB;
         public MatchStateLog state;
@@ -746,6 +809,16 @@ public sealed class ArenaMatchLogger : MonoBehaviour
         public bool success;
         public string actionJson;
         public string error;
+    }
+
+    [Serializable]
+    private sealed class ActionSubmittedEvent : LogEvent
+    {
+        public int roundId;
+        public string side;
+        public string source;
+        public string strategyNote;
+        public ActionOfferLog[] offers;
     }
 
     [Serializable]
@@ -839,6 +912,14 @@ public sealed class ArenaMatchLogger : MonoBehaviour
     [Serializable]
     private sealed class OfferLog
     {
+        public string workplaceId;
+        public int wage;
+    }
+
+    [Serializable]
+    private sealed class ActionOfferLog
+    {
+        public string citizenId;
         public string workplaceId;
         public int wage;
     }

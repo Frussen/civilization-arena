@@ -867,8 +867,8 @@ MonoBehaviour:
     Every new or renegotiated contract must
     satisfy the employer''s payroll coverage requirement.
 
-    Offers are processed
-    sequentially in the supplied order, and rejection is a possible gameplay outcome.
+    Offers are resolved
+    in ordinal CitizenId order, and rejection is a possible gameplay outcome.
 
     You
     are competing against another strategic agent pursuing its own Wonder. The opposing
@@ -1073,8 +1073,8 @@ MonoBehaviour:
     Every new or renegotiated contract must
     satisfy the employer''s payroll coverage requirement.
 
-    Offers are processed
-    sequentially in the supplied order, and rejection is a possible gameplay outcome.
+    Offers are resolved
+    in ordinal CitizenId order, and rejection is a possible gameplay outcome.
 
     You
     are competing against another strategic agent pursuing its own Wonder. The opposing

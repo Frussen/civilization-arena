@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum CitizenDestinationPurpose
+{
+    None,
+    Work,
+    Rest
+}
+
 public class CitizenRoutine : MonoBehaviour
 {
     [SerializeField] private WorldClock clock;
@@ -10,8 +17,16 @@ public class CitizenRoutine : MonoBehaviour
 
     private CitizenWorkAssignment workAssignment;
     private Transform currentDestination;
+    private CitizenDestinationPurpose destinationPurpose;
 
     public WorkShift Shift => workShift;
+    public CitizenDestinationPurpose DestinationPurpose =>
+        destinationPurpose;
+    public bool HasCurrentDestination => currentDestination != null;
+    public bool HasArrivedAtDestination =>
+        currentDestination != null &&
+        mover != null &&
+        mover.HasArrivedAt(currentDestination);
     public bool IsWorkingTime
     {
         get
@@ -37,6 +52,11 @@ public class CitizenRoutine : MonoBehaviour
 
         Transform desiredDestination =
             shouldWork ? workplace.transform : residentialArea.transform;
+        CitizenDestinationPurpose desiredPurpose = shouldWork
+            ? CitizenDestinationPurpose.Work
+            : CitizenDestinationPurpose.Rest;
+
+        destinationPurpose = desiredPurpose;
 
         if (desiredDestination == currentDestination)
         {
@@ -48,5 +68,10 @@ public class CitizenRoutine : MonoBehaviour
             shouldWork ? workplace.WorkRadius : residentialArea.RestRadius;
 
         mover.MoveTo(currentDestination, stoppingDistance);
+    }
+
+    public bool IsCurrentDestination(Transform destination)
+    {
+        return destination != null && currentDestination == destination;
     }
 }
