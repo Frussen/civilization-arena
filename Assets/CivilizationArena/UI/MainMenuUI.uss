@@ -171,3 +171,31 @@
 .configuration-start-button {
     margin-left: 6px;
 }
+
+.ai-side-columns {
+    width: 100%;
+    flex-direction: row;
+}
+
+.ai-side-section {
+    flex-grow: 1;
+    width: 50%;
+}
+
+.ai-side-a-section {
+    margin-right: 8px;
+}
+
+.ai-side-b-section {
+    margin-left: 8px;
+}
+
+.ai-side-title {
+    height: 24px;
+    margin-bottom: 4px;
+    color: var(--accent);
+    font-size: 13px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    -unity-text-align: middle-center;
+}

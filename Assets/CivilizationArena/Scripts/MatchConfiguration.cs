@@ -72,6 +72,17 @@ public readonly struct MatchConfiguration
             new MatchSideConfiguration(
                 MatchSideControlMode.AI,
                 aiConfiguration));
+
+    public static MatchConfiguration AiArena(
+        MatchAiConfiguration sideAAiConfiguration,
+        MatchAiConfiguration sideBAiConfiguration) =>
+        new MatchConfiguration(
+            new MatchSideConfiguration(
+                MatchSideControlMode.AI,
+                sideAAiConfiguration),
+            new MatchSideConfiguration(
+                MatchSideControlMode.AI,
+                sideBAiConfiguration));
 }
 
 public static class MatchConfigurationSession
