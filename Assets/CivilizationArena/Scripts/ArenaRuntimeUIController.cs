@@ -50,6 +50,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private Rect originalCameraRect;
     private bool originalCameraRectCaptured;
     private bool sceneLoadRequested;
+    private bool resultJinglePlayed;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeRuntimeAttachment()
@@ -641,8 +642,40 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 
         matchResultTitle.text = title;
         matchResultDetail.text = detail;
+        PlayResultJingle(result);
         SetPostMatchButtonsEnabled(!sceneLoadRequested);
         SetStatus(string.Empty, false);
+    }
+
+    private void PlayResultJingle(ArenaMatchResult result)
+    {
+        if (resultJinglePlayed)
+        {
+            return;
+        }
+
+        resultJinglePlayed = true;
+        bool sideAManual = roundController.SideAControlMode ==
+            AgentControlMode.Manual;
+        bool sideBManual = roundController.SideBControlMode ==
+            AgentControlMode.Manual;
+
+        if (sideAManual != sideBManual &&
+            (result == ArenaMatchResult.SideA ||
+             result == ArenaMatchResult.SideB))
+        {
+            bool manualSideWon = sideAManual
+                ? result == ArenaMatchResult.SideA
+                : result == ArenaMatchResult.SideB;
+
+            if (!manualSideWon)
+            {
+                ArenaAudioManager.PlayDefeatResultJingle();
+                return;
+            }
+        }
+
+        ArenaAudioManager.PlayPositiveResultJingle();
     }
 
     private void Rematch()
@@ -654,6 +687,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 
         sceneLoadRequested = true;
         SetPostMatchButtonsEnabled(false);
+        ArenaAudioManager.PlayUiClick();
 
         if (!MatchConfigurationSession.TryPrepareRematch())
         {
@@ -672,6 +706,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 
         sceneLoadRequested = true;
         SetPostMatchButtonsEnabled(false);
+        ArenaAudioManager.PlayUiClick();
         MatchConfigurationSession.Clear();
         SceneManager.LoadScene(MainMenuSceneName, LoadSceneMode.Single);
     }
@@ -834,6 +869,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             return;
         }
 
+        ArenaAudioManager.PlayUiClick();
         submitUnlockTime = Time.unscaledTime + SubmitDebounceSeconds;
         submitButton.SetEnabled(false);
         SetCitizenInputsEnabled(false);

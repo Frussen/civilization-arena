@@ -108,9 +108,9 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaButton.clicked += ShowAiArenaConfiguration;
         singlePlayerButton.clicked += ShowSinglePlayerConfiguration;
         localMultiplayerButton.clicked += LoadLocalMultiplayer;
-        singlePlayerBackButton.clicked += ShowModeSelection;
+        singlePlayerBackButton.clicked += ReturnToModeSelection;
         singlePlayerStartButton.clicked += StartSinglePlayerMatch;
-        aiArenaBackButton.clicked += ShowModeSelection;
+        aiArenaBackButton.clicked += ReturnToModeSelection;
         aiArenaStartButton.clicked += StartAiArenaMatch;
     }
 
@@ -133,7 +133,7 @@ public sealed class MainMenuController : MonoBehaviour
 
         if (singlePlayerBackButton != null)
         {
-            singlePlayerBackButton.clicked -= ShowModeSelection;
+            singlePlayerBackButton.clicked -= ReturnToModeSelection;
         }
 
         if (singlePlayerStartButton != null)
@@ -143,7 +143,7 @@ public sealed class MainMenuController : MonoBehaviour
 
         if (aiArenaBackButton != null)
         {
-            aiArenaBackButton.clicked -= ShowModeSelection;
+            aiArenaBackButton.clicked -= ReturnToModeSelection;
         }
 
         if (aiArenaStartButton != null)
@@ -161,6 +161,7 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
+        ArenaAudioManager.PlayUiClick();
         SetConfigurationError(aiArenaErrorLabel, null);
         modeSelectionView.style.display = DisplayStyle.None;
         singlePlayerConfigurationView.style.display = DisplayStyle.None;
@@ -174,6 +175,7 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
+        ArenaAudioManager.PlayUiClick();
         SetConfigurationError(singlePlayerErrorLabel, null);
         modeSelectionView.style.display = DisplayStyle.None;
         aiArenaConfigurationView.style.display = DisplayStyle.None;
@@ -182,6 +184,12 @@ public sealed class MainMenuController : MonoBehaviour
 
     private void LoadLocalMultiplayer()
     {
+        if (loadRequested)
+        {
+            return;
+        }
+
+        ArenaAudioManager.PlayUiClick();
         LoadMatch(MatchConfiguration.LocalMultiplayer);
     }
 
@@ -192,6 +200,7 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
+        ArenaAudioManager.PlayUiClick();
         if (!singlePlayerAiFields.TryBuildConfiguration(
                 "Side B",
                 out MatchAiConfiguration aiConfiguration,
@@ -214,6 +223,7 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
+        ArenaAudioManager.PlayUiClick();
         if (!aiArenaSideAFields.TryBuildConfiguration(
                 "Side A",
                 out MatchAiConfiguration sideAConfiguration,
@@ -233,6 +243,17 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaSideAFields.ClearCredential();
         aiArenaSideBFields.ClearCredential();
         LoadMatch(configuration);
+    }
+
+    private void ReturnToModeSelection()
+    {
+        if (loadRequested)
+        {
+            return;
+        }
+
+        ArenaAudioManager.PlayUiClick();
+        ShowModeSelection();
     }
 
     private void ShowModeSelection()
