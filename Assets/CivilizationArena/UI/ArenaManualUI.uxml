@@ -36,6 +36,10 @@
         <ui:VisualElement name="match-result-panel" class="match-result-panel">
             <ui:Label name="match-result-title" text="MATCH OVER" class="match-result-title" />
             <ui:Label name="match-result-detail" text="" class="match-result-detail" />
+            <ui:VisualElement class="match-result-actions">
+                <ui:Button name="rematch-button" text="REMATCH" class="match-result-button primary" />
+                <ui:Button name="main-menu-button" text="MAIN MENU" class="match-result-button" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:Label name="status-label" text="" class="status-label" />

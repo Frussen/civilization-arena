@@ -11,10 +11,13 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 {
     private const float PollIntervalSeconds = 0.1f;
     private const float SubmitDebounceSeconds = 0.35f;
+    private const string ArenaSceneName = "M0";
+    private const string MainMenuSceneName = "MainMenu";
 
     [SerializeField] private ArenaLlmRoundController roundController;
 
     private VisualElement mainPanel;
+    private VisualElement headerRow;
     private Label turnLabel;
     private Label timeLabel;
     private Label goldLabel;
@@ -34,6 +37,8 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private VisualElement matchResultPanel;
     private Label matchResultTitle;
     private Label matchResultDetail;
+    private Button rematchButton;
+    private Button mainMenuButton;
 
     private ArenaManualDecisionController displayedController;
     private int displayedRoundId;
@@ -44,6 +49,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private Camera gameplayCamera;
     private Rect originalCameraRect;
     private bool originalCameraRectCaptured;
+    private bool sceneLoadRequested;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeRuntimeAttachment()
@@ -114,6 +120,16 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             submitButton.clicked -= SubmitTurn;
         }
 
+        if (rematchButton != null)
+        {
+            rematchButton.clicked -= Rematch;
+        }
+
+        if (mainMenuButton != null)
+        {
+            mainMenuButton.clicked -= ReturnToMainMenu;
+        }
+
         RestoreGameplayCameraViewport();
 
         initialized = false;
@@ -136,6 +152,7 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         }
 
         mainPanel = root.Q<VisualElement>("main-panel");
+        headerRow = root.Q<VisualElement>(className: "header-row");
         turnLabel = root.Q<Label>("turn-label");
         timeLabel = root.Q<Label>("time-label");
         goldLabel = root.Q<Label>("gold-label");
@@ -157,8 +174,11 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         matchResultPanel = root.Q<VisualElement>("match-result-panel");
         matchResultTitle = root.Q<Label>("match-result-title");
         matchResultDetail = root.Q<Label>("match-result-detail");
+        rematchButton = root.Q<Button>("rematch-button");
+        mainMenuButton = root.Q<Button>("main-menu-button");
 
         if (mainPanel == null ||
+            headerRow == null ||
             turnLabel == null ||
             timeLabel == null ||
             goldLabel == null ||
@@ -177,7 +197,9 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             statusLabel == null ||
             matchResultPanel == null ||
             matchResultTitle == null ||
-            matchResultDetail == null)
+            matchResultDetail == null ||
+            rematchButton == null ||
+            mainMenuButton == null)
         {
             Debug.LogError(
                 "ArenaManualUI is missing one or more required named elements.",
@@ -192,6 +214,8 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             HandleCitizenScrollGeometryChanged);
         citizenScroll.schedule.Execute(UpdateTableHeaderGutter);
         submitButton.clicked += SubmitTurn;
+        rematchButton.clicked += Rematch;
+        mainMenuButton.clicked += ReturnToMainMenu;
         initialized = true;
     }
 
@@ -230,9 +254,17 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         bool matchEnded = matchController != null &&
             matchController.IsMatchEnded;
 
-        if (IsApiVsApi())
+        bool apiVsApi = IsApiVsApi();
+
+        if (apiVsApi)
         {
             SetGameplayCameraFullScreen();
+            mainPanel.EnableInClassList(
+                "spectator-result-overlay",
+                matchEnded);
+            headerRow.style.display = matchEnded
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
             mainPanel.style.display = matchEnded
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
@@ -248,6 +280,8 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         else
         {
             RestoreGameplayCameraViewport();
+            mainPanel.RemoveFromClassList("spectator-result-overlay");
+            headerRow.style.display = DisplayStyle.Flex;
             mainPanel.style.display = DisplayStyle.Flex;
         }
 
@@ -607,7 +641,45 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 
         matchResultTitle.text = title;
         matchResultDetail.text = detail;
+        SetPostMatchButtonsEnabled(!sceneLoadRequested);
         SetStatus(string.Empty, false);
+    }
+
+    private void Rematch()
+    {
+        if (sceneLoadRequested || !showingMatchResult)
+        {
+            return;
+        }
+
+        sceneLoadRequested = true;
+        SetPostMatchButtonsEnabled(false);
+
+        if (!MatchConfigurationSession.TryPrepareRematch())
+        {
+            MatchConfigurationSession.Clear();
+        }
+
+        SceneManager.LoadScene(ArenaSceneName, LoadSceneMode.Single);
+    }
+
+    private void ReturnToMainMenu()
+    {
+        if (sceneLoadRequested || !showingMatchResult)
+        {
+            return;
+        }
+
+        sceneLoadRequested = true;
+        SetPostMatchButtonsEnabled(false);
+        MatchConfigurationSession.Clear();
+        SceneManager.LoadScene(MainMenuSceneName, LoadSceneMode.Single);
+    }
+
+    private void SetPostMatchButtonsEnabled(bool enabledState)
+    {
+        rematchButton.SetEnabled(enabledState);
+        mainMenuButton.SetEnabled(enabledState);
     }
 
     private void SetHudVisibility(

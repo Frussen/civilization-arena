@@ -89,20 +89,43 @@ public static class MatchConfigurationSession
 {
     private static bool hasPendingConfiguration;
     private static MatchConfiguration pendingConfiguration;
+    private static bool hasActiveConfiguration;
+    private static MatchConfiguration activeConfiguration;
 
     public static bool HasPendingConfiguration => hasPendingConfiguration;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetForNewPlaySession()
     {
-        hasPendingConfiguration = false;
-        pendingConfiguration = default;
+        Clear();
     }
 
     public static void SetPending(MatchConfiguration configuration)
     {
         pendingConfiguration = configuration;
         hasPendingConfiguration = true;
+        hasActiveConfiguration = false;
+        activeConfiguration = default;
+    }
+
+    public static bool TryPrepareRematch()
+    {
+        if (!hasActiveConfiguration)
+        {
+            return false;
+        }
+
+        pendingConfiguration = activeConfiguration;
+        hasPendingConfiguration = true;
+        return true;
+    }
+
+    public static void Clear()
+    {
+        hasPendingConfiguration = false;
+        pendingConfiguration = default;
+        hasActiveConfiguration = false;
+        activeConfiguration = default;
     }
 
     internal static bool TryConsumePending(
@@ -117,7 +140,15 @@ public static class MatchConfigurationSession
         configuration = pendingConfiguration;
         hasPendingConfiguration = false;
         pendingConfiguration = default;
+        hasActiveConfiguration = false;
+        activeConfiguration = default;
         return true;
+    }
+
+    internal static void SetActive(MatchConfiguration configuration)
+    {
+        activeConfiguration = configuration;
+        hasActiveConfiguration = true;
     }
 }
 
@@ -189,7 +220,10 @@ internal static class MatchConfigurationArenaBootstrap
                 $"MatchConfiguration could not be applied: {error}",
                 controller);
             controller.enabled = false;
+            return;
         }
+
+        MatchConfigurationSession.SetActive(configuration);
     }
 
     private static bool TryPrepareSide(
