@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/CivilizationArena/Scenes/MainMenu.unity
+    guid: d67ae6f9b53443858cc522f3e5271d3a
+  - enabled: 1
+    path: Assets/CivilizationArena/Scenes/M0.unity
+    guid: bf3747e225194498bb91a6d56830eb82
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

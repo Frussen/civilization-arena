@@ -151,6 +151,11 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
             return;
         }
 
+        if (!worldClock.StartupFrameComplete)
+        {
+            return;
+        }
+
         if (firstAutomaticUpdatePending)
         {
             firstAutomaticUpdatePending = false;

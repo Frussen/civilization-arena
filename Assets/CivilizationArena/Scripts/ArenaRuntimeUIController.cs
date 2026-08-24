@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 [DisallowMultipleComponent]
@@ -42,6 +43,20 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private bool initialized;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void InitializeRuntimeAttachment()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        AttachToExistingArenaDocument();
+    }
+
+    private static void HandleSceneLoaded(
+        Scene scene,
+        LoadSceneMode mode)
+    {
+        AttachToExistingArenaDocument();
+    }
+
     private static void AttachToExistingArenaDocument()
     {
         UIDocument[] documents = FindObjectsByType<UIDocument>(

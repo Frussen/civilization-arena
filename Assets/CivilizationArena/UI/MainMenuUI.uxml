@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="MainMenuUI.uss" />
+    <ui:VisualElement class="menu-root">
+        <ui:VisualElement class="menu-card">
+            <ui:Label text="CIVILIZATION ARENA" class="game-title" />
+            <ui:Label text="Choose game mode" class="menu-subtitle" />
+
+            <ui:VisualElement class="mode-list">
+                <ui:VisualElement class="mode-row">
+                    <ui:Button name="ai-arena-button" text="AI ARENA" enabled="false" class="mode-button" />
+                    <ui:Label text="COMING SOON" class="availability-label" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="mode-row">
+                    <ui:Button name="single-player-button" text="SINGLE PLAYER" enabled="false" class="mode-button" />
+                    <ui:Label text="COMING SOON" class="availability-label" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="mode-row">
+                    <ui:Button name="local-multiplayer-button" text="LOCAL MULTIPLAYER" class="mode-button primary-button" />
+                    <ui:Label text="MANUAL VS MANUAL" class="availability-label available-label" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="mode-row">
+                    <ui:Button name="online-multiplayer-button" text="ONLINE MULTIPLAYER" enabled="false" class="mode-button" />
+                    <ui:Label text="COMING SOON" class="availability-label" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

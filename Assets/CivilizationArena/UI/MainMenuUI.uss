@@ -1,0 +1,104 @@
+:root {
+    --menu-background: rgb(22, 25, 29);
+    --card-background: rgb(31, 35, 40);
+    --card-border: rgb(76, 82, 90);
+    --button-background: rgb(43, 48, 54);
+    --button-hover: rgb(55, 61, 68);
+    --text-primary: rgb(232, 235, 238);
+    --text-secondary: rgb(157, 165, 174);
+    --accent: rgb(207, 158, 54);
+}
+
+.menu-root {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--menu-background);
+    color: var(--text-primary);
+}
+
+.menu-card {
+    width: 520px;
+    padding: 44px 54px 50px 54px;
+    align-items: center;
+    background-color: var(--card-background);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--card-border);
+    border-right-color: var(--card-border);
+    border-bottom-color: var(--card-border);
+    border-left-color: var(--card-border);
+}
+
+.game-title {
+    min-height: 56px;
+    color: var(--accent);
+    font-size: 34px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.menu-subtitle {
+    margin-top: 4px;
+    margin-bottom: 28px;
+    color: var(--text-secondary);
+    font-size: 15px;
+    -unity-text-align: middle-center;
+}
+
+.mode-list {
+    width: 100%;
+}
+
+.mode-row {
+    min-height: 68px;
+    margin-bottom: 8px;
+}
+
+.mode-button {
+    height: 48px;
+    margin: 0;
+    background-color: var(--button-background);
+    color: var(--text-primary);
+    border-top-color: var(--card-border);
+    border-right-color: var(--card-border);
+    border-bottom-color: var(--card-border);
+    border-left-color: var(--card-border);
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.mode-button:hover {
+    background-color: var(--button-hover);
+}
+
+.mode-button:disabled {
+    opacity: 0.5;
+    color: var(--text-secondary);
+}
+
+.primary-button {
+    background-color: rgb(151, 105, 25);
+    border-top-color: var(--accent);
+    border-right-color: var(--accent);
+    border-bottom-color: var(--accent);
+    border-left-color: var(--accent);
+}
+
+.primary-button:hover {
+    background-color: rgb(177, 126, 33);
+}
+
+.availability-label {
+    height: 18px;
+    color: rgb(119, 127, 136);
+    font-size: 10px;
+    letter-spacing: 1px;
+    -unity-text-align: middle-center;
+}
+
+.available-label {
+    color: var(--accent);
+}

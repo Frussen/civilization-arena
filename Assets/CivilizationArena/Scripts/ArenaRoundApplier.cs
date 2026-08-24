@@ -211,13 +211,19 @@ public sealed class ArenaRoundApplier : MonoBehaviour
 
         if (!EconomicSnapshotsMatch(expected.SideA, current.SideA))
         {
-            error = "Side A economic state changed after resolution.";
+            error = BuildEconomicSnapshotMismatch(
+                "A",
+                expected.SideA,
+                current.SideA);
             return false;
         }
 
         if (!EconomicSnapshotsMatch(expected.SideB, current.SideB))
         {
-            error = "Side B economic state changed after resolution.";
+            error = BuildEconomicSnapshotMismatch(
+                "B",
+                expected.SideB,
+                current.SideB);
             return false;
         }
 
@@ -270,6 +276,25 @@ public sealed class ArenaRoundApplier : MonoBehaviour
             expected.Gold == current.Gold &&
             expected.CurrentPayrollPerHour == current.CurrentPayrollPerHour &&
             expected.PayrollCoverageHours == current.PayrollCoverageHours;
+    }
+
+    private static string BuildEconomicSnapshotMismatch(
+        string side,
+        ArenaAgentEconomicSnapshot expected,
+        ArenaAgentEconomicSnapshot current)
+    {
+        if (current == null)
+        {
+            return $"Side {side} economic snapshot is missing.";
+        }
+
+        return $"Side {side} economic snapshot mismatch: " +
+            $"gold expected={Format(expected.Gold)} " +
+            $"actual={Format(current.Gold)}, " +
+            $"payroll expected={Format(expected.CurrentPayrollPerHour)} " +
+            $"actual={Format(current.CurrentPayrollPerHour)}, " +
+            $"coverage expected={Format(expected.PayrollCoverageHours)} " +
+            $"actual={Format(current.PayrollCoverageHours)}.";
     }
 
     private static bool TryBuildWorkplaceLookup(
