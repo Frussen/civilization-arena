@@ -4,31 +4,48 @@ using UnityEngine;
 
 public sealed class ArenaHUDController : MonoBehaviour
 {
+    [SerializeField] private ArenaLlmRoundController roundController;
     [SerializeField] private AgentTreasury agentATreasury;
     [SerializeField] private AgentResourceStockpile agentAResourceStockpile;
+    [SerializeField] private WonderConstruction agentAWonder;
     [SerializeField] private TMP_Text hudText;
     [SerializeField] private AgentTreasury agentBTreasury;
     [SerializeField] private AgentResourceStockpile agentBResourceStockpile;
+    [SerializeField] private WonderConstruction agentBWonder;
     [SerializeField] private TMP_Text agentBHudText;
 
     private void Update()
     {
         UpdateDisplay(
-            "<color=#E74C3C><b>Agent A</b></color>",
+            FormatSideLabel(ArenaSide.A, "#E74C3C"),
             agentATreasury,
             agentAResourceStockpile,
+            agentAWonder,
             hudText);
         UpdateDisplay(
-            "<color=#1F6FEB><b>Agent B</b></color>",
+            FormatSideLabel(ArenaSide.B, "#1F6FEB"),
             agentBTreasury,
             agentBResourceStockpile,
+            agentBWonder,
             agentBHudText);
+    }
+
+    private string FormatSideLabel(ArenaSide side, string color)
+    {
+        bool isManual = roundController != null &&
+            (side == ArenaSide.A
+                ? roundController.SideAControlMode
+                : roundController.SideBControlMode) ==
+            AgentControlMode.Manual;
+        string role = isManual ? "Player" : "Agent";
+        return $"<color={color}><b>{role} {side}</b></color>";
     }
 
     private static void UpdateDisplay(
         string agentLabel,
         AgentTreasury treasury,
         AgentResourceStockpile stockpile,
+        WonderConstruction wonder,
         TMP_Text text)
     {
         if (treasury == null || stockpile == null || text == null)
@@ -38,8 +55,45 @@ public sealed class ArenaHUDController : MonoBehaviour
 
         text.text =
             $"{agentLabel}\n" +
-            $"Gold: {treasury.CurrentGold.ToString("0", CultureInfo.InvariantCulture)}\n" +
-            $"Stone: {stockpile.Stone.ToString("0", CultureInfo.InvariantCulture)}\n" +
-            $"Wood: {stockpile.Wood.ToString("0", CultureInfo.InvariantCulture)}";
+            $"Gold: {FormatWholeUnits(treasury.CurrentGold)}\n" +
+            $"Stone: {FormatWholeUnits(stockpile.Stone)}\n" +
+            $"Wood: {FormatWholeUnits(stockpile.Wood)}\n" +
+            $"Wonder: {FormatWonderProgress(wonder)}";
+    }
+
+    private static string FormatWholeUnits(float value)
+    {
+        float wholeUnits = value >= 0f
+            ? Mathf.Floor(value)
+            : Mathf.Ceil(value);
+        return wholeUnits.ToString("0", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatWonderProgress(WonderConstruction wonder)
+    {
+        if (wonder == null)
+        {
+            return "—";
+        }
+
+        if (wonder.Completed)
+        {
+            return "100.0%";
+        }
+
+        float completed = wonder.LaborHoursCompleted;
+        float required = wonder.LaborHoursRequired;
+
+        if (required <= 0f ||
+            float.IsNaN(required) ||
+            float.IsInfinity(required) ||
+            float.IsNaN(completed) ||
+            float.IsInfinity(completed))
+        {
+            return "—";
+        }
+
+        float percentage = Mathf.Clamp01(completed / required) * 100f;
+        return percentage.ToString("0.0", CultureInfo.InvariantCulture) + "%";
     }
 }

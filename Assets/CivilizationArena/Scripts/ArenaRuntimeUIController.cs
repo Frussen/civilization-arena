@@ -41,6 +41,9 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private float submitUnlockTime;
     private bool showingMatchResult;
     private bool initialized;
+    private Camera gameplayCamera;
+    private Rect originalCameraRect;
+    private bool originalCameraRectCaptured;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InitializeRuntimeAttachment()
@@ -110,6 +113,8 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         {
             submitButton.clicked -= SubmitTurn;
         }
+
+        RestoreGameplayCameraViewport();
 
         initialized = false;
         displayedController = null;
@@ -222,8 +227,31 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         ArenaMatchController matchController = roundController != null
             ? roundController.ArenaMatchController
             : null;
+        bool matchEnded = matchController != null &&
+            matchController.IsMatchEnded;
 
-        if (matchController != null && matchController.IsMatchEnded)
+        if (IsApiVsApi())
+        {
+            SetGameplayCameraFullScreen();
+            mainPanel.style.display = matchEnded
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+
+            if (!matchEnded)
+            {
+                displayedController = null;
+                displayedRoundId = 0;
+                showingMatchResult = false;
+                return;
+            }
+        }
+        else
+        {
+            RestoreGameplayCameraViewport();
+            mainPanel.style.display = DisplayStyle.Flex;
+        }
+
+        if (matchEnded)
         {
             displayedController = null;
             displayedRoundId = 0;
@@ -272,8 +300,56 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         }
         else
         {
-            RefreshPassiveStatus();
+            RefreshPassiveState();
         }
+    }
+
+    private bool IsApiVsApi()
+    {
+        return roundController != null &&
+            roundController.SideAControlMode == AgentControlMode.Api &&
+            roundController.SideBControlMode == AgentControlMode.Api;
+    }
+
+    private void SetGameplayCameraFullScreen()
+    {
+        if (!TryCaptureGameplayCamera())
+        {
+            return;
+        }
+
+        gameplayCamera.rect = new Rect(0f, 0f, 1f, 1f);
+    }
+
+    private void RestoreGameplayCameraViewport()
+    {
+        if (!originalCameraRectCaptured || gameplayCamera == null)
+        {
+            return;
+        }
+
+        gameplayCamera.rect = originalCameraRect;
+    }
+
+    private bool TryCaptureGameplayCamera()
+    {
+        if (originalCameraRectCaptured && gameplayCamera != null)
+        {
+            return true;
+        }
+
+        Camera candidate = Camera.main;
+
+        if (candidate == null ||
+            candidate.gameObject.scene != gameObject.scene)
+        {
+            return false;
+        }
+
+        gameplayCamera = candidate;
+        originalCameraRect = candidate.rect;
+        originalCameraRectCaptured = true;
+        return true;
     }
 
     private ArenaManualDecisionController SelectWaitingController()
@@ -311,17 +387,33 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
 
     private void ShowDecision(ArenaManualDecisionController controller)
     {
-        SetMarketVisible(true);
+        SetHudVisibility(
+            economyVisible: true,
+            decisionVisible: true,
+            matchResultVisible: false);
         ArenaManualObservationView observation =
             ArenaManualObservationView.Parse(controller.CapturedObservation);
 
         turnLabel.text = $"Agent {controller.ActiveSide} turn";
+        ApplyObservationToHud(
+            observation,
+            $"Round {controller.CurrentRoundId}");
+
+        BuildCitizenRows(controller, observation);
+        submitButton.SetEnabled(Time.unscaledTime >= submitUnlockTime);
+        RefreshStatus(controller);
+    }
+
+    private void ApplyObservationToHud(
+        ArenaManualObservationView observation,
+        string fallbackTime)
+    {
         timeLabel.text = observation.HasTime
             ? $"Day {observation.Day} — {observation.Hour:D2}:" +
               $"{observation.Minute:D2}"
-            : $"Round {controller.CurrentRoundId}";
+            : fallbackTime;
 
-        goldLabel.text = FormatValue("Gold", observation.Gold);
+        goldLabel.text = FormatWholeValue("Gold", observation.Gold);
         incomeLabel.text = FormatRate(
             "Income",
             observation.GoldIncomePerHour,
@@ -334,18 +426,29 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             "Net",
             observation.NetGoldPerHour,
             false);
-        woodLabel.text = FormatValue("Wood", observation.Wood);
-        stoneLabel.text = FormatValue("Stone", observation.Stone);
+        woodLabel.text = FormatWholeValue("Wood", observation.Wood);
+        stoneLabel.text = FormatWholeValue("Stone", observation.Stone);
         wonderLabel.text = FormatWonder(observation);
-
-        BuildCitizenRows(controller, observation);
-        submitButton.SetEnabled(Time.unscaledTime >= submitUnlockTime);
-        RefreshStatus(controller);
     }
 
     private void ShowPassiveState()
     {
-        SetMarketVisible(true);
+        if (TryGetPersistentHumanInterface(out _))
+        {
+            SetHudVisibility(
+                economyVisible: true,
+                decisionVisible: false,
+                matchResultVisible: false);
+            citizenRows.Clear();
+            submitButton.SetEnabled(false);
+            RefreshPersistentHumanHud();
+            return;
+        }
+
+        SetHudVisibility(
+            economyVisible: true,
+            decisionVisible: true,
+            matchResultVisible: false);
         turnLabel.text = "No manual decision";
         timeLabel.text = "—";
         goldLabel.text = "Gold: —";
@@ -364,6 +467,94 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         RefreshPassiveStatus();
     }
 
+    private void RefreshPassiveState()
+    {
+        if (TryGetPersistentHumanInterface(out _))
+        {
+            RefreshPersistentHumanHud();
+            return;
+        }
+
+        RefreshPassiveStatus();
+    }
+
+    private void RefreshPersistentHumanHud()
+    {
+        if (!TryGetPersistentHumanInterface(
+                out AgentTextInterface textInterface) ||
+            textInterface == null)
+        {
+            ShowUnavailablePersistentHud(
+                "The human observation interface is unavailable.");
+            return;
+        }
+
+        bool waitingForAi = roundController.RoundActive;
+        turnLabel.text = waitingForAi
+            ? "Waiting for AI"
+            : "Simulation running";
+
+        if (!textInterface.TryCaptureArenaObservation(
+                out string observationText,
+                out string error))
+        {
+            ShowUnavailablePersistentHud(error);
+            return;
+        }
+
+        ArenaManualObservationView observation =
+            ArenaManualObservationView.Parse(observationText);
+        ApplyObservationToHud(observation, "—");
+        SetStatus(
+            waitingForAi
+                ? "Waiting for the AI action."
+                : "Waiting for next decision.",
+            false);
+    }
+
+    private void ShowUnavailablePersistentHud(string error)
+    {
+        timeLabel.text = "—";
+        goldLabel.text = "Gold: —";
+        incomeLabel.text = "Income: —";
+        payrollLabel.text = "Payroll: —";
+        netLabel.text = "Net: —";
+        woodLabel.text = "Wood: —";
+        stoneLabel.text = "Stone: —";
+        wonderLabel.text = "Wonder: —";
+        SetStatus(
+            string.IsNullOrWhiteSpace(error)
+                ? "Live human statistics are unavailable."
+                : error,
+            true);
+    }
+
+    private bool TryGetPersistentHumanInterface(
+        out AgentTextInterface textInterface)
+    {
+        textInterface = null;
+
+        if (roundController == null)
+        {
+            return false;
+        }
+
+        bool sideAManual = roundController.SideAControlMode ==
+            AgentControlMode.Manual;
+        bool sideBManual = roundController.SideBControlMode ==
+            AgentControlMode.Manual;
+
+        if (sideAManual == sideBManual)
+        {
+            return false;
+        }
+
+        textInterface = sideAManual
+            ? roundController.SideATextInterface
+            : roundController.SideBTextInterface;
+        return true;
+    }
+
     private void RefreshPassiveStatus()
     {
         SetStatus("Waiting for a manual Arena decision.", false);
@@ -372,7 +563,10 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
     private void ShowMatchResult(ArenaMatchController matchController)
     {
         showingMatchResult = true;
-        SetMarketVisible(false);
+        SetHudVisibility(
+            economyVisible: false,
+            decisionVisible: false,
+            matchResultVisible: true);
         submitButton.SetEnabled(false);
         turnLabel.text = "Match complete";
         timeLabel.text = "—";
@@ -416,17 +610,23 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         SetStatus(string.Empty, false);
     }
 
-    private void SetMarketVisible(bool visible)
+    private void SetHudVisibility(
+        bool economyVisible,
+        bool decisionVisible,
+        bool matchResultVisible)
     {
-        DisplayStyle marketDisplay = visible
+        economyRow.style.display = economyVisible
             ? DisplayStyle.Flex
             : DisplayStyle.None;
-        economyRow.style.display = marketDisplay;
-        tableHeader.style.display = marketDisplay;
-        citizenScroll.style.display = marketDisplay;
-        matchResultPanel.style.display = visible
-            ? DisplayStyle.None
-            : DisplayStyle.Flex;
+        DisplayStyle decisionDisplay = decisionVisible
+            ? DisplayStyle.Flex
+            : DisplayStyle.None;
+        tableHeader.style.display = decisionDisplay;
+        citizenScroll.style.display = decisionDisplay;
+        submitButton.style.display = decisionDisplay;
+        matchResultPanel.style.display = matchResultVisible
+            ? DisplayStyle.Flex
+            : DisplayStyle.None;
     }
 
     private void BuildCitizenRows(
@@ -648,10 +848,22 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
             : citizen.Wage;
     }
 
-    private static string FormatValue(string label, string value)
+    private static string FormatWholeValue(string label, string value)
     {
+        if (!float.TryParse(
+                value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out float number))
+        {
+            return $"{label}: —";
+        }
+
+        float wholeUnits = number >= 0f
+            ? Mathf.Floor(number)
+            : Mathf.Ceil(number);
         return $"{label}: " +
-            (string.IsNullOrWhiteSpace(value) ? "—" : value);
+            wholeUnits.ToString("0", CultureInfo.InvariantCulture);
     }
 
     private static string FormatRate(

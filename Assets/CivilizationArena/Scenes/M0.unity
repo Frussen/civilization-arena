@@ -2833,7 +2833,9 @@ MonoBehaviour:
 
     Stone: 0
 
-    Wood: 0'
+    Wood: 0
+
+    Wonder: 0.0%'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3725,8 +3727,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 170, y: -90}
-  m_SizeDelta: {x: 300, y: 140}
+  m_AnchoredPosition: {x: 170, y: -100}
+  m_SizeDelta: {x: 300, y: 165}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1288364266
 MonoBehaviour:
@@ -3801,8 +3803,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -170, y: -90}
-  m_SizeDelta: {x: 300, y: 140}
+  m_AnchoredPosition: {x: -170, y: -100}
+  m_SizeDelta: {x: 300, y: 165}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1299057260
 MonoBehaviour:
@@ -5378,7 +5380,9 @@ MonoBehaviour:
 
     Stone: 0
 
-    Wood: 0'
+    Wood: 0
+
+    Wonder: 0.0%'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5575,11 +5579,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 305510e0997034f7a829f2d809962e0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArenaHUDController
+  roundController: {fileID: 2071210475}
   agentATreasury: {fileID: 361394900}
   agentAResourceStockpile: {fileID: 361394903}
+  agentAWonder: {fileID: 1896526194}
   hudText: {fileID: 2078832566}
   agentBTreasury: {fileID: 424630248}
   agentBResourceStockpile: {fileID: 424630246}
+  agentBWonder: {fileID: 195692859}
   agentBHudText: {fileID: 1108464621}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -109,6 +109,25 @@ public class AgentTextInterface : MonoBehaviour
         return true;
     }
 
+    public bool TryCaptureArenaObservation(
+        out string observation,
+        out string error)
+    {
+        observation = null;
+
+        if (!Application.isPlaying)
+        {
+            error =
+                "Arena observations can be captured only during Play Mode.";
+            return false;
+        }
+
+        return TryBuildObservation(
+            true,
+            out observation,
+            out error);
+    }
+
     [ContextMenu("Apply Action JSON")]
     private void ApplyActionJsonFromContextMenu()
     {
@@ -761,6 +780,14 @@ public class AgentTextInterface : MonoBehaviour
             {
                 return binding.Id;
             }
+        }
+
+        if (workplace.TryGetComponent(
+                out WonderConstruction workplaceWonder) &&
+            workplaceWonder.Owner != null &&
+            workplaceWonder.Owner != treasury)
+        {
+            return "opponent_wonder";
         }
 
         return "unconfigured";
