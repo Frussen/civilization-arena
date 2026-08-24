@@ -6,11 +6,13 @@ using UnityEngine.Networking;
 
 public class OpenAiLlmProvider : LlmProviderBehaviour
 {
+    public const string DefaultModel = "gpt-5.6";
+
     private const string ResponsesEndpoint =
         "https://api.openai.com/v1/responses";
     private const int RequestTimeoutSeconds = 180;
 
-    [SerializeField] private string model = "gpt-5.6";
+    [SerializeField] private string model = DefaultModel;
     [SerializeField] private string apiKeyEnvironmentVariable =
         "OPENAI_API_KEY";
     [TextArea(7, 15)]
@@ -37,8 +39,43 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
 
     private Coroutine activeRequest;
     private int requestVersion;
+    private string runtimeApiKey;
 
     public override string ModelLabel => model;
+
+    public bool TryConfigureRuntime(
+        string configuredModel,
+        string configuredApiKey,
+        out string error)
+    {
+        if (!Application.isPlaying)
+        {
+            error =
+                "OpenAI runtime configuration is available only in Play Mode.";
+            return false;
+        }
+
+        if (activeRequest != null)
+        {
+            error =
+                "OpenAI runtime configuration cannot change during a request.";
+            return false;
+        }
+
+        string normalizedModel = configuredModel?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedModel))
+        {
+            error = "The OpenAI model must not be blank.";
+            return false;
+        }
+
+        model = normalizedModel;
+        runtimeApiKey = string.IsNullOrWhiteSpace(configuredApiKey)
+            ? null
+            : configuredApiKey;
+        error = null;
+        return true;
+    }
 
     public override void RequestAction(
         string observation,
@@ -65,22 +102,27 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(apiKeyEnvironmentVariable))
-        {
-            onCompleted(LlmProviderResult.Failed(
-                "The API key environment variable name is empty."));
-            return;
-        }
-
-        string apiKey = Environment.GetEnvironmentVariable(
-            apiKeyEnvironmentVariable);
+        string apiKey = runtimeApiKey;
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            onCompleted(LlmProviderResult.Failed(
-                $"API key environment variable " +
-                $"'{apiKeyEnvironmentVariable}' is not set."));
-            return;
+            if (string.IsNullOrWhiteSpace(apiKeyEnvironmentVariable))
+            {
+                onCompleted(LlmProviderResult.Failed(
+                    "The API key environment variable name is empty."));
+                return;
+            }
+
+            apiKey = Environment.GetEnvironmentVariable(
+                apiKeyEnvironmentVariable);
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                onCompleted(LlmProviderResult.Failed(
+                    $"API key environment variable " +
+                    $"'{apiKeyEnvironmentVariable}' is not set."));
+                return;
+            }
         }
 
         OpenAiResponsesRequest requestBody = BuildRequest(
@@ -106,6 +148,12 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             StopCoroutine(activeRequest);
             activeRequest = null;
         }
+    }
+
+    private void OnDisable()
+    {
+        CancelRequest();
+        runtimeApiKey = null;
     }
 
     private IEnumerator SendRequest(

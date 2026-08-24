@@ -5240,7 +5240,7 @@ MonoBehaviour:
   sideATextInterface: {fileID: 361394904}
   sideAProvider: {fileID: 361394908}
   sideAManualDecisionController: {fileID: 60312974}
-  sideBControlMode: 0
+  sideBControlMode: 1
   sideBTextInterface: {fileID: 424630245}
   sideBProvider: {fileID: 424630241}
   sideBManualDecisionController: {fileID: 1926320200}

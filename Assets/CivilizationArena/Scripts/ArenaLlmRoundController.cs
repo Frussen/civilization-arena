@@ -104,6 +104,39 @@ public sealed class ArenaLlmRoundController : MonoBehaviour
     public ArenaManualDecisionController SideBManualDecisionController =>
         sideBManualDecisionController;
 
+    public bool TryConfigureControlModes(
+        AgentControlMode configuredSideAControlMode,
+        AgentControlMode configuredSideBControlMode,
+        out string error)
+    {
+        if (!Application.isPlaying)
+        {
+            error =
+                "Arena control modes can be configured only during Play Mode.";
+            return false;
+        }
+
+        if (roundActive || resolvingRound || coordinator.IsRoundOpen ||
+            pauseLease.IsValid)
+        {
+            error =
+                "Arena control modes cannot change while a round is active.";
+            return false;
+        }
+
+        if (!IsValidControlMode(configuredSideAControlMode) ||
+            !IsValidControlMode(configuredSideBControlMode))
+        {
+            error = "Arena side control modes are invalid.";
+            return false;
+        }
+
+        sideAControlMode = configuredSideAControlMode;
+        sideBControlMode = configuredSideBControlMode;
+        error = null;
+        return true;
+    }
+
     private void OnEnable()
     {
         automaticSchedulingWasEnabled = automaticRoundsEnabled;

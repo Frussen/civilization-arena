@@ -2,28 +2,53 @@
     <Style src="MainMenuUI.uss" />
     <ui:VisualElement class="menu-root">
         <ui:VisualElement class="menu-card">
-            <ui:Label text="CIVILIZATION ARENA" class="game-title" />
-            <ui:Label text="Choose game mode" class="menu-subtitle" />
+            <ui:VisualElement name="mode-selection-view" class="menu-view">
+                <ui:Label text="CIVILIZATION ARENA" class="game-title" />
+                <ui:Label text="Choose game mode" class="menu-subtitle" />
 
-            <ui:VisualElement class="mode-list">
-                <ui:VisualElement class="mode-row">
-                    <ui:Button name="ai-arena-button" text="AI ARENA" enabled="false" class="mode-button" />
-                    <ui:Label text="COMING SOON" class="availability-label" />
+                <ui:VisualElement class="mode-list">
+                    <ui:VisualElement class="mode-row">
+                        <ui:Button name="ai-arena-button" text="AI ARENA" enabled="false" class="mode-button" />
+                        <ui:Label text="COMING SOON" class="availability-label" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="mode-row">
+                        <ui:Button name="single-player-button" text="SINGLE PLAYER" class="mode-button primary-button" />
+                        <ui:Label text="MANUAL VS AI" class="availability-label available-label" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="mode-row">
+                        <ui:Button name="local-multiplayer-button" text="LOCAL MULTIPLAYER" class="mode-button primary-button" />
+                        <ui:Label text="MANUAL VS MANUAL" class="availability-label available-label" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="mode-row">
+                        <ui:Button name="online-multiplayer-button" text="ONLINE MULTIPLAYER" enabled="false" class="mode-button" />
+                        <ui:Label text="COMING SOON" class="availability-label" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="single-player-configuration-view" class="menu-view configuration-view" style="display: none;">
+                <ui:Label text="CIVILIZATION ARENA" class="game-title" />
+                <ui:Label text="SINGLE PLAYER" class="configuration-title" />
+
+                <ui:VisualElement class="configuration-form">
+                    <ui:Label text="AI PROVIDER" class="field-label" />
+                    <ui:DropdownField name="ai-provider-field" class="configuration-field" />
+
+                    <ui:Label text="MODEL" class="field-label" />
+                    <ui:TextField name="model-field" class="configuration-field" />
+
+                    <ui:Label text="API KEY" class="field-label" />
+                    <ui:TextField name="api-key-field" is-password-field="true" class="configuration-field" />
+
+                    <ui:Label name="configuration-error-label" class="configuration-error" style="display: none;" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="mode-row">
-                    <ui:Button name="single-player-button" text="SINGLE PLAYER" enabled="false" class="mode-button" />
-                    <ui:Label text="COMING SOON" class="availability-label" />
-                </ui:VisualElement>
-
-                <ui:VisualElement class="mode-row">
-                    <ui:Button name="local-multiplayer-button" text="LOCAL MULTIPLAYER" class="mode-button primary-button" />
-                    <ui:Label text="MANUAL VS MANUAL" class="availability-label available-label" />
-                </ui:VisualElement>
-
-                <ui:VisualElement class="mode-row">
-                    <ui:Button name="online-multiplayer-button" text="ONLINE MULTIPLAYER" enabled="false" class="mode-button" />
-                    <ui:Label text="COMING SOON" class="availability-label" />
+                <ui:VisualElement class="configuration-actions">
+                    <ui:Button name="configuration-back-button" text="BACK" class="configuration-button configuration-back-button mode-button" />
+                    <ui:Button name="start-match-button" text="START MATCH" class="configuration-button configuration-start-button mode-button primary-button" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
