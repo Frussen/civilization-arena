@@ -9,6 +9,7 @@ public sealed class MainMenuController : MonoBehaviour
 {
     private const string ArenaSceneName = "M0";
     private const string OpenAIProviderLabel = "OpenAI";
+    private const string LocalProviderLabel = "Local (LM Studio)";
     private const string FullscreenPreferenceKey =
         "CivilizationArena.Fullscreen";
     private static readonly List<string> OpenAIModelChoices =
@@ -78,20 +79,11 @@ public sealed class MainMenuController : MonoBehaviour
             root.Q<Button>("local-multiplayer-button");
         settingsButton = root.Q<Button>("settings-button");
         singlePlayerAiFields = new AiSideFields(
-            root,
-            "ai-provider-field",
-            "model-field",
-            "api-key-field");
+            root.Q<VisualElement>("single-player-ai-fields"));
         aiArenaSideAFields = new AiSideFields(
-            root,
-            "ai-arena-side-a-provider-field",
-            "ai-arena-side-a-model-field",
-            "ai-arena-side-a-api-key-field");
+            root.Q<VisualElement>("ai-arena-side-a-ai-fields"));
         aiArenaSideBFields = new AiSideFields(
-            root,
-            "ai-arena-side-b-provider-field",
-            "ai-arena-side-b-model-field",
-            "ai-arena-side-b-api-key-field");
+            root.Q<VisualElement>("ai-arena-side-b-ai-fields"));
         singlePlayerErrorLabel =
             root.Q<Label>("configuration-error-label");
         aiArenaErrorLabel =
@@ -231,6 +223,9 @@ public sealed class MainMenuController : MonoBehaviour
                 HandleFullscreenChanged);
         }
 
+        singlePlayerAiFields?.UnregisterCallbacks();
+        aiArenaSideAFields?.UnregisterCallbacks();
+        aiArenaSideBFields?.UnregisterCallbacks();
         ClearApiKeyFields();
     }
 
@@ -477,39 +472,78 @@ public sealed class MainMenuController : MonoBehaviour
     private sealed class AiSideFields
     {
         private readonly DropdownField providerField;
-        private readonly DropdownField modelField;
+        private readonly VisualElement openAiModelRow;
+        private readonly DropdownField openAiModelField;
+        private readonly VisualElement apiKeyRow;
         private readonly TextField apiKeyField;
+        private readonly VisualElement localEndpointRow;
+        private readonly TextField localEndpointField;
+        private readonly VisualElement localModelRow;
+        private readonly TextField localModelField;
 
         public bool IsValid => providerField != null &&
-            modelField != null && apiKeyField != null;
+            openAiModelRow != null && openAiModelField != null &&
+            apiKeyRow != null && apiKeyField != null &&
+            localEndpointRow != null && localEndpointField != null &&
+            localModelRow != null && localModelField != null;
 
-        public AiSideFields(
-            VisualElement root,
-            string providerFieldName,
-            string modelFieldName,
-            string apiKeyFieldName)
+        public AiSideFields(VisualElement container)
         {
-            providerField = root.Q<DropdownField>(providerFieldName);
-            modelField = root.Q<DropdownField>(modelFieldName);
-            apiKeyField = root.Q<TextField>(apiKeyFieldName);
+            if (container == null)
+            {
+                return;
+            }
+
+            providerField = container.Q<DropdownField>(
+                className: "ai-provider-field");
+            openAiModelRow = container.Q<VisualElement>(
+                className: "openai-model-row");
+            openAiModelField = container.Q<DropdownField>(
+                className: "openai-model-field");
+            apiKeyRow = container.Q<VisualElement>(
+                className: "api-key-row");
+            apiKeyField = container.Q<TextField>(
+                className: "api-key-field");
+            localEndpointRow = container.Q<VisualElement>(
+                className: "local-endpoint-row");
+            localEndpointField = container.Q<TextField>(
+                className: "local-endpoint-field");
+            localModelRow = container.Q<VisualElement>(
+                className: "local-model-row");
+            localModelField = container.Q<TextField>(
+                className: "local-model-field");
         }
 
         public void Initialize()
         {
             providerField.choices = new List<string>
             {
-                OpenAIProviderLabel
+                OpenAIProviderLabel,
+                LocalProviderLabel
             };
-            modelField.choices = OpenAIModelChoices;
+            openAiModelField.choices = OpenAIModelChoices;
             apiKeyField.isPasswordField = true;
+            providerField.RegisterValueChangedCallback(
+                HandleProviderChanged);
             ResetDefaults();
+        }
+
+        public void UnregisterCallbacks()
+        {
+            providerField?.UnregisterValueChangedCallback(
+                HandleProviderChanged);
         }
 
         public void ResetDefaults()
         {
             providerField.SetValueWithoutNotify(OpenAIProviderLabel);
-            modelField.SetValueWithoutNotify(
+            openAiModelField.SetValueWithoutNotify(
                 OpenAiLlmProvider.DefaultModel);
+            localEndpointField.SetValueWithoutNotify(
+                OpenAiLlmProvider.DefaultLocalBaseUrl);
+            localModelField.SetValueWithoutNotify(string.Empty);
+            ClearCredential();
+            UpdateProviderPresentation();
         }
 
         public void ClearCredential()
@@ -527,30 +561,91 @@ public sealed class MainMenuController : MonoBehaviour
         {
             configuration = default;
 
-            if (!string.Equals(
+            if (string.Equals(
                     providerField.value,
                     OpenAIProviderLabel,
                     System.StringComparison.Ordinal))
             {
-                error = $"{sideName}: select a supported AI provider.";
-                return false;
+                string model = openAiModelField.value;
+                if (string.IsNullOrWhiteSpace(model) ||
+                    !OpenAIModelChoices.Contains(model))
+                {
+                    error =
+                        $"{sideName}: select a supported OpenAI model.";
+                    return false;
+                }
+
+                configuration = new MatchAiConfiguration(
+                    MatchAiProvider.OpenAI,
+                    model,
+                    apiKeyField.value);
+                error = null;
+                return true;
             }
 
-            string model = modelField.value;
-            if (string.IsNullOrWhiteSpace(model) ||
-                !OpenAIModelChoices.Contains(model))
+            if (string.Equals(
+                    providerField.value,
+                    LocalProviderLabel,
+                    System.StringComparison.Ordinal))
             {
-                error =
-                    $"{sideName}: select a supported OpenAI model.";
-                return false;
+                string localModel = localModelField.value?.Trim();
+                if (string.IsNullOrWhiteSpace(localModel))
+                {
+                    error = $"{sideName}: local model is required.";
+                    return false;
+                }
+
+                string localEndpoint = localEndpointField.value?.Trim();
+                if (!IsValidLocalEndpoint(localEndpoint))
+                {
+                    error = $"{sideName}: enter a valid local endpoint.";
+                    return false;
+                }
+
+                configuration = new MatchAiConfiguration(
+                    MatchAiProvider.LocalOpenAICompatible,
+                    localModel,
+                    null,
+                    localEndpoint);
+                error = null;
+                return true;
             }
 
-            configuration = new MatchAiConfiguration(
-                MatchAiProvider.OpenAI,
-                model,
-                apiKeyField.value);
-            error = null;
-            return true;
+            error = $"{sideName}: select a supported AI provider.";
+            return false;
+        }
+
+        private void HandleProviderChanged(ChangeEvent<string> change)
+        {
+            UpdateProviderPresentation();
+        }
+
+        private void UpdateProviderPresentation()
+        {
+            bool showLocal = string.Equals(
+                providerField.value,
+                LocalProviderLabel,
+                System.StringComparison.Ordinal);
+
+            openAiModelRow.style.display = showLocal
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
+            apiKeyRow.style.display = showLocal
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
+            localEndpointRow.style.display = showLocal
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            localModelRow.style.display = showLocal
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
+
+        private static bool IsValidLocalEndpoint(string endpoint)
+        {
+            return OpenAiLlmProvider.TryBuildLocalResponsesEndpoint(
+                endpoint,
+                out _);
         }
     }
 }

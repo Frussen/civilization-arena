@@ -7,6 +7,8 @@ using UnityEngine.Networking;
 public class OpenAiLlmProvider : LlmProviderBehaviour
 {
     public const string DefaultModel = "gpt-5.6";
+    public const string DefaultLocalBaseUrl =
+        "http://localhost:1234/v1";
 
     private const string ResponsesEndpoint =
         "https://api.openai.com/v1/responses";
@@ -40,6 +42,9 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     private Coroutine activeRequest;
     private int requestVersion;
     private string runtimeApiKey;
+    private RuntimeProviderMode runtimeProviderMode =
+        RuntimeProviderMode.OpenAICloud;
+    private string runtimeResponsesEndpoint = ResponsesEndpoint;
 
     public override string ModelLabel => model;
 
@@ -73,6 +78,53 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
         runtimeApiKey = string.IsNullOrWhiteSpace(configuredApiKey)
             ? null
             : configuredApiKey;
+        runtimeProviderMode = RuntimeProviderMode.OpenAICloud;
+        runtimeResponsesEndpoint = ResponsesEndpoint;
+        error = null;
+        return true;
+    }
+
+    public bool TryConfigureLocalRuntime(
+        string configuredModel,
+        string configuredBaseUrl,
+        out string error)
+    {
+        if (!Application.isPlaying)
+        {
+            error =
+                "Local AI runtime configuration is available only in Play " +
+                "Mode.";
+            return false;
+        }
+
+        if (activeRequest != null)
+        {
+            error =
+                "Local AI runtime configuration cannot change during a " +
+                "request.";
+            return false;
+        }
+
+        string normalizedModel = configuredModel?.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedModel))
+        {
+            error = "The local model must not be blank.";
+            return false;
+        }
+
+        if (!TryBuildLocalResponsesEndpoint(
+                configuredBaseUrl,
+                out string responsesEndpoint))
+        {
+            error =
+                "The local endpoint must be an absolute HTTP or HTTPS URL.";
+            return false;
+        }
+
+        model = normalizedModel;
+        runtimeApiKey = null;
+        runtimeProviderMode = RuntimeProviderMode.LocalOpenAICompatible;
+        runtimeResponsesEndpoint = responsesEndpoint;
         error = null;
         return true;
     }
@@ -102,38 +154,49 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             return;
         }
 
-        string apiKey = runtimeApiKey;
-
-        if (string.IsNullOrWhiteSpace(apiKey))
+        string apiKey = null;
+        if (runtimeProviderMode == RuntimeProviderMode.OpenAICloud)
         {
-            if (string.IsNullOrWhiteSpace(apiKeyEnvironmentVariable))
-            {
-                onCompleted(LlmProviderResult.Failed(
-                    "The API key environment variable name is empty."));
-                return;
-            }
-
-            apiKey = Environment.GetEnvironmentVariable(
-                apiKeyEnvironmentVariable);
+            apiKey = runtimeApiKey;
 
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                onCompleted(LlmProviderResult.Failed(
-                    $"API key environment variable " +
-                    $"'{apiKeyEnvironmentVariable}' is not set."));
-                return;
+                if (string.IsNullOrWhiteSpace(apiKeyEnvironmentVariable))
+                {
+                    onCompleted(LlmProviderResult.Failed(
+                        "The API key environment variable name is empty."));
+                    return;
+                }
+
+                apiKey = Environment.GetEnvironmentVariable(
+                    apiKeyEnvironmentVariable);
+
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    onCompleted(LlmProviderResult.Failed(
+                        $"API key environment variable " +
+                        $"'{apiKeyEnvironmentVariable}' is not set."));
+                    return;
+                }
             }
         }
 
-        OpenAiResponsesRequest requestBody = BuildRequest(
-            observation,
+        ActionObjectSchema actionSchema = BuildActionSchema(
             citizenIds,
             workplaceIds);
-
-        string requestJson = JsonUtility.ToJson(requestBody);
+        string requestJson = runtimeProviderMode ==
+            RuntimeProviderMode.LocalOpenAICompatible
+            ? JsonUtility.ToJson(BuildLocalChatCompletionsRequest(
+                observation,
+                actionSchema))
+            : JsonUtility.ToJson(BuildRequest(
+                observation,
+                actionSchema));
         int currentRequestVersion = ++requestVersion;
         activeRequest = StartCoroutine(SendRequest(
             currentRequestVersion,
+            runtimeResponsesEndpoint,
+            runtimeProviderMode,
             apiKey,
             requestJson,
             onCompleted));
@@ -154,16 +217,20 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     {
         CancelRequest();
         runtimeApiKey = null;
+        runtimeProviderMode = RuntimeProviderMode.OpenAICloud;
+        runtimeResponsesEndpoint = ResponsesEndpoint;
     }
 
     private IEnumerator SendRequest(
         int currentRequestVersion,
+        string responsesEndpoint,
+        RuntimeProviderMode providerMode,
         string apiKey,
         string requestJson,
         Action<LlmProviderResult> onCompleted)
     {
         using (UnityWebRequest request = new UnityWebRequest(
-            ResponsesEndpoint,
+            responsesEndpoint,
             UnityWebRequest.kHttpVerbPOST))
         {
             request.uploadHandler = new UploadHandlerRaw(
@@ -171,7 +238,11 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             request.downloadHandler = new DownloadHandlerBuffer();
             request.timeout = RequestTimeoutSeconds;
             request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("Authorization", $"Bearer {apiKey}");
+            if (providerMode == RuntimeProviderMode.OpenAICloud &&
+                !string.IsNullOrWhiteSpace(apiKey))
+            {
+                request.SetRequestHeader("Authorization", $"Bearer {apiKey}");
+            }
 
             yield return request.SendWebRequest();
 
@@ -200,8 +271,42 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             CompleteRequest(
                 currentRequestVersion,
                 onCompleted,
-                ParseResponse(request.downloadHandler?.text));
+                providerMode == RuntimeProviderMode.LocalOpenAICompatible
+                    ? ParseLocalChatCompletionsResponse(
+                        request.downloadHandler?.text)
+                    : ParseResponse(request.downloadHandler?.text));
         }
+    }
+
+    internal static bool TryBuildLocalResponsesEndpoint(
+        string configuredBaseUrl,
+        out string responsesEndpoint)
+    {
+        responsesEndpoint = null;
+        string normalizedBaseUrl = configuredBaseUrl?.Trim().TrimEnd('/');
+
+        if (string.IsNullOrWhiteSpace(normalizedBaseUrl) ||
+            !Uri.TryCreate(
+                normalizedBaseUrl,
+                UriKind.Absolute,
+                out Uri baseUri) ||
+            !string.IsNullOrEmpty(baseUri.Query) ||
+            !string.IsNullOrEmpty(baseUri.Fragment) ||
+            (!string.Equals(
+                baseUri.Scheme,
+                Uri.UriSchemeHttp,
+                StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(
+                baseUri.Scheme,
+                Uri.UriSchemeHttps,
+                StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        responsesEndpoint = baseUri.GetLeftPart(UriPartial.Path).TrimEnd('/') +
+            "/chat/completions";
+        return true;
     }
 
     private void CompleteRequest(
@@ -269,6 +374,61 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
 
     private OpenAiResponsesRequest BuildRequest(
         string observation,
+        ActionObjectSchema actionSchema)
+    {
+        return new OpenAiResponsesRequest
+        {
+            model = model,
+            instructions = systemInstructions,
+            input = observation,
+            text = new ResponseTextConfiguration
+            {
+                format = new ResponseTextFormat
+                {
+                    type = "json_schema",
+                    name = "civilization_arena_action",
+                    strict = true,
+                    schema = actionSchema
+                }
+            }
+        };
+    }
+
+    private LocalChatCompletionsRequest BuildLocalChatCompletionsRequest(
+        string observation,
+        ActionObjectSchema actionSchema)
+    {
+        return new LocalChatCompletionsRequest
+        {
+            model = model,
+            messages = new[]
+            {
+                new ChatMessage
+                {
+                    role = "system",
+                    content = systemInstructions
+                },
+                new ChatMessage
+                {
+                    role = "user",
+                    content = observation
+                }
+            },
+            response_format = new ChatResponseFormat
+            {
+                type = "json_schema",
+                json_schema = new ChatJsonSchema
+                {
+                    name = "civilization_arena_action",
+                    strict = true,
+                    schema = actionSchema
+                }
+            },
+            stream = false
+        };
+    }
+
+    private static ActionObjectSchema BuildActionSchema(
         string[] citizenIds,
         string[] workplaceIds)
     {
@@ -322,22 +482,51 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
             additionalProperties = false
         };
 
-        return new OpenAiResponsesRequest
+        return actionSchema;
+    }
+
+    private static LlmProviderResult ParseLocalChatCompletionsResponse(
+        string responseJson)
+    {
+        LocalChatCompletionsResponse response;
+
+        try
         {
-            model = model,
-            instructions = systemInstructions,
-            input = observation,
-            text = new ResponseTextConfiguration
-            {
-                format = new ResponseTextFormat
-                {
-                    type = "json_schema",
-                    name = "civilization_arena_action",
-                    strict = true,
-                    schema = actionSchema
-                }
-            }
-        };
+            response = JsonUtility.FromJson<LocalChatCompletionsResponse>(
+                responseJson);
+        }
+        catch (Exception)
+        {
+            return LlmProviderResult.Failed(
+                "Malformed local chat completion response.");
+        }
+
+        if (response == null)
+        {
+            return LlmProviderResult.Failed(
+                "Empty local chat completion response.");
+        }
+
+        if (response.choices == null || response.choices.Length == 0)
+        {
+            return LlmProviderResult.Failed(
+                "Local chat completion returned no choices.");
+        }
+
+        if (response.choices[0]?.message == null)
+        {
+            return LlmProviderResult.Failed(
+                "Local chat completion returned no message.");
+        }
+
+        string actionJson = response.choices[0].message.content;
+        if (string.IsNullOrWhiteSpace(actionJson))
+        {
+            return LlmProviderResult.Failed(
+                "Local chat completion returned no message content.");
+        }
+
+        return LlmProviderResult.Succeeded(actionJson);
     }
 
     private static string FindRefusal(OpenAiResponsesResponse response)
@@ -429,6 +618,37 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     }
 
     [Serializable]
+    private class LocalChatCompletionsRequest
+    {
+        public string model;
+        public ChatMessage[] messages;
+        public ChatResponseFormat response_format;
+        public bool stream;
+    }
+
+    [Serializable]
+    private class ChatMessage
+    {
+        public string role;
+        public string content;
+    }
+
+    [Serializable]
+    private class ChatResponseFormat
+    {
+        public string type;
+        public ChatJsonSchema json_schema;
+    }
+
+    [Serializable]
+    private class ChatJsonSchema
+    {
+        public string name;
+        public bool strict;
+        public ActionObjectSchema schema;
+    }
+
+    [Serializable]
     private class ResponseTextConfiguration
     {
         public ResponseTextFormat format;
@@ -514,6 +734,18 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     }
 
     [Serializable]
+    private class LocalChatCompletionsResponse
+    {
+        public LocalChatChoice[] choices;
+    }
+
+    [Serializable]
+    private class LocalChatChoice
+    {
+        public ChatMessage message;
+    }
+
+    [Serializable]
     private class OpenAiOutputItem
     {
         public string type;
@@ -539,5 +771,11 @@ public class OpenAiLlmProvider : LlmProviderBehaviour
     private class OpenAiError
     {
         public string message;
+    }
+
+    private enum RuntimeProviderMode
+    {
+        OpenAICloud,
+        LocalOpenAICompatible
     }
 }

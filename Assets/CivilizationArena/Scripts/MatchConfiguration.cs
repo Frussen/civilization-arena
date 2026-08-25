@@ -10,23 +10,31 @@ public enum MatchSideControlMode
 
 public enum MatchAiProvider
 {
-    OpenAI
+    OpenAI,
+    LocalOpenAICompatible
 }
 
 public readonly struct MatchAiConfiguration
 {
     public MatchAiProvider Provider { get; }
     public string Model { get; }
+    public string EndpointBaseUrl { get; }
     internal string RuntimeCredential { get; }
 
     public MatchAiConfiguration(
         MatchAiProvider provider,
         string model,
-        string runtimeCredential)
+        string runtimeCredential,
+        string endpointBaseUrl = null)
     {
         Provider = provider;
         Model = model;
-        RuntimeCredential = runtimeCredential;
+        EndpointBaseUrl = provider == MatchAiProvider.LocalOpenAICompatible
+            ? endpointBaseUrl
+            : null;
+        RuntimeCredential = provider == MatchAiProvider.OpenAI
+            ? runtimeCredential
+            : null;
     }
 }
 
@@ -304,6 +312,26 @@ internal static class MatchConfigurationArenaBootstrap
                         out error))
                 {
                     error = $"{sideName} OpenAI configuration failed: {error}";
+                    return false;
+                }
+
+                return true;
+
+            case MatchAiProvider.LocalOpenAICompatible:
+                if (!(arenaProvider is OpenAiLlmProvider localProvider))
+                {
+                    error =
+                        $"{sideName} requires an OpenAiLlmProvider component.";
+                    return false;
+                }
+
+                if (!localProvider.TryConfigureLocalRuntime(
+                        configuration.Model,
+                        configuration.EndpointBaseUrl,
+                        out error))
+                {
+                    error =
+                        $"{sideName} Local AI configuration failed: {error}";
                     return false;
                 }
 

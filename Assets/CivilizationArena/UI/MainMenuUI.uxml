@@ -1,8 +1,8 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="MainMenuUI.uss" />
     <ui:VisualElement class="menu-root">
-        <ui:VisualElement class="menu-background-overlay" />
         <ui:VisualElement class="menu-card">
+            <ui:VisualElement class="menu-card-overlay" />
             <ui:VisualElement name="mode-selection-view" class="menu-view">
                 <ui:Label text="CIVILIZATION ARENA" class="game-title" />
                 <ui:Label text="Choose game mode" class="menu-subtitle" />
@@ -65,15 +65,31 @@
                 <ui:Label text="CIVILIZATION ARENA" class="game-title" />
                 <ui:Label text="SINGLE PLAYER" class="configuration-title" />
 
-                <ui:VisualElement class="configuration-form">
-                    <ui:Label text="AI PROVIDER" class="field-label" />
-                    <ui:DropdownField name="ai-provider-field" class="configuration-field" />
+                <ui:VisualElement name="single-player-ai-fields" class="configuration-form ai-side-fields">
+                    <ui:VisualElement class="configuration-field-row">
+                        <ui:Label text="AI PROVIDER" class="field-label" />
+                        <ui:DropdownField name="ai-provider-field" class="configuration-field ai-provider-field" />
+                    </ui:VisualElement>
 
-                    <ui:Label text="MODEL" class="field-label" />
-                    <ui:DropdownField name="model-field" class="configuration-field" />
+                    <ui:VisualElement class="configuration-field-row openai-model-row">
+                        <ui:Label text="MODEL" class="field-label" />
+                        <ui:DropdownField name="model-field" class="configuration-field openai-model-field" />
+                    </ui:VisualElement>
 
-                    <ui:Label text="API KEY" class="field-label" />
-                    <ui:TextField name="api-key-field" is-password-field="true" class="configuration-field" />
+                    <ui:VisualElement class="configuration-field-row api-key-row">
+                        <ui:Label text="API KEY" class="field-label" />
+                        <ui:TextField name="api-key-field" is-password-field="true" class="configuration-field api-key-field" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="configuration-field-row local-endpoint-row" style="display: none;">
+                        <ui:Label text="LOCAL ENDPOINT" class="field-label" />
+                        <ui:TextField name="local-endpoint-field" class="configuration-field local-endpoint-field" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="configuration-field-row local-model-row" style="display: none;">
+                        <ui:Label text="MODEL" class="field-label" />
+                        <ui:TextField name="local-model-field" class="configuration-field local-model-field" />
+                    </ui:VisualElement>
 
                     <ui:Label name="configuration-error-label" class="configuration-error" style="display: none;" />
                 </ui:VisualElement>
@@ -89,30 +105,62 @@
                 <ui:Label text="AI ARENA" class="configuration-title" />
 
                 <ui:VisualElement class="ai-side-columns">
-                    <ui:VisualElement class="ai-side-section ai-side-a-section">
+                    <ui:VisualElement name="ai-arena-side-a-ai-fields" class="ai-side-section ai-side-a-section ai-side-fields">
                         <ui:Label text="SIDE A" class="ai-side-title" />
 
-                        <ui:Label text="AI PROVIDER" class="field-label" />
-                        <ui:DropdownField name="ai-arena-side-a-provider-field" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row">
+                            <ui:Label text="AI PROVIDER" class="field-label" />
+                            <ui:DropdownField name="ai-arena-side-a-provider-field" class="configuration-field ai-provider-field" />
+                        </ui:VisualElement>
 
-                        <ui:Label text="MODEL" class="field-label" />
-                        <ui:DropdownField name="ai-arena-side-a-model-field" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row openai-model-row">
+                            <ui:Label text="MODEL" class="field-label" />
+                            <ui:DropdownField name="ai-arena-side-a-model-field" class="configuration-field openai-model-field" />
+                        </ui:VisualElement>
 
-                        <ui:Label text="API KEY" class="field-label" />
-                        <ui:TextField name="ai-arena-side-a-api-key-field" is-password-field="true" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row api-key-row">
+                            <ui:Label text="API KEY" class="field-label" />
+                            <ui:TextField name="ai-arena-side-a-api-key-field" is-password-field="true" class="configuration-field api-key-field" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="configuration-field-row local-endpoint-row" style="display: none;">
+                            <ui:Label text="LOCAL ENDPOINT" class="field-label" />
+                            <ui:TextField name="ai-arena-side-a-local-endpoint-field" class="configuration-field local-endpoint-field" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="configuration-field-row local-model-row" style="display: none;">
+                            <ui:Label text="MODEL" class="field-label" />
+                            <ui:TextField name="ai-arena-side-a-local-model-field" class="configuration-field local-model-field" />
+                        </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="ai-side-section ai-side-b-section">
+                    <ui:VisualElement name="ai-arena-side-b-ai-fields" class="ai-side-section ai-side-b-section ai-side-fields">
                         <ui:Label text="SIDE B" class="ai-side-title" />
 
-                        <ui:Label text="AI PROVIDER" class="field-label" />
-                        <ui:DropdownField name="ai-arena-side-b-provider-field" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row">
+                            <ui:Label text="AI PROVIDER" class="field-label" />
+                            <ui:DropdownField name="ai-arena-side-b-provider-field" class="configuration-field ai-provider-field" />
+                        </ui:VisualElement>
 
-                        <ui:Label text="MODEL" class="field-label" />
-                        <ui:DropdownField name="ai-arena-side-b-model-field" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row openai-model-row">
+                            <ui:Label text="MODEL" class="field-label" />
+                            <ui:DropdownField name="ai-arena-side-b-model-field" class="configuration-field openai-model-field" />
+                        </ui:VisualElement>
 
-                        <ui:Label text="API KEY" class="field-label" />
-                        <ui:TextField name="ai-arena-side-b-api-key-field" is-password-field="true" class="configuration-field" />
+                        <ui:VisualElement class="configuration-field-row api-key-row">
+                            <ui:Label text="API KEY" class="field-label" />
+                            <ui:TextField name="ai-arena-side-b-api-key-field" is-password-field="true" class="configuration-field api-key-field" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="configuration-field-row local-endpoint-row" style="display: none;">
+                            <ui:Label text="LOCAL ENDPOINT" class="field-label" />
+                            <ui:TextField name="ai-arena-side-b-local-endpoint-field" class="configuration-field local-endpoint-field" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="configuration-field-row local-model-row" style="display: none;">
+                            <ui:Label text="MODEL" class="field-label" />
+                            <ui:TextField name="ai-arena-side-b-local-model-field" class="configuration-field local-model-field" />
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
 

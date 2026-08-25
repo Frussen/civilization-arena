@@ -14,25 +14,28 @@
     align-items: center;
     justify-content: center;
     background-color: var(--menu-background);
-    background-image: url("Images/MainMenuBackground.jpeg");
-    -unity-background-scale-mode: scale-and-crop;
     color: var(--text-primary);
 }
 
-.menu-background-overlay {
+.menu-card-overlay {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(9, 11, 14, 0.58);
+    background-color: rgba(9, 11, 14, 0.87);
 }
 
 .menu-card {
     width: 520px;
+    height: 536px;
+    min-height: 536px;
+    flex-shrink: 0;
     padding: 36px 54px;
     align-items: center;
-    background-color: rgba(31, 35, 40, 0.9);
+    background-color: var(--card-background);
+    background-image: url("Images/MainMenuBackground.jpeg");
+    -unity-background-scale-mode: scale-and-crop;
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
@@ -45,7 +48,9 @@
 
 .menu-view {
     width: 100%;
+    flex-grow: 1;
     align-items: center;
+    justify-content: center;
 }
 
 .game-title {
@@ -130,6 +135,10 @@
 }
 
 .configuration-form {
+    width: 100%;
+}
+
+.configuration-field-row {
     width: 100%;
 }
 
