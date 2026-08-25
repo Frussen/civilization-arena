@@ -3,11 +3,19 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class ArenaAudioManager : MonoBehaviour
 {
-    private const float MusicVolume = 0.25f;
-    private const float UiClickVolume = 0.5f;
-    private const float ResultJingleVolume = 0.6f;
+    public const float DefaultMusicVolume = 0.25f;
+    public const float DefaultSfxVolume = 0.5f;
+
+    private const float ResultJingleRelativeGain = 1.2f;
+    private const string MusicVolumePreferenceKey =
+        "CivilizationArena.MusicVolume";
+    private const string SfxVolumePreferenceKey =
+        "CivilizationArena.SfxVolume";
 
     private static ArenaAudioManager instance;
+    private static float currentMusicVolume = DefaultMusicVolume;
+    private static float currentSfxVolume = DefaultSfxVolume;
+    private static bool preferencesLoaded;
 
     [SerializeField] private AudioClip musicClip;
     [SerializeField] private AudioClip uiClickClip;
@@ -18,11 +26,32 @@ public sealed class ArenaAudioManager : MonoBehaviour
     private AudioSource uiSfxSource;
     private AudioSource resultSfxSource;
 
+    public static float CurrentMusicVolume
+    {
+        get
+        {
+            EnsurePreferencesLoaded();
+            return currentMusicVolume;
+        }
+    }
+
+    public static float CurrentSfxVolume
+    {
+        get
+        {
+            EnsurePreferencesLoaded();
+            return currentSfxVolume;
+        }
+    }
+
     [RuntimeInitializeOnLoadMethod(
         RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
     {
         instance = null;
+        currentMusicVolume = DefaultMusicVolume;
+        currentSfxVolume = DefaultSfxVolume;
+        preferencesLoaded = false;
     }
 
     private void Awake()
@@ -35,13 +64,14 @@ public sealed class ArenaAudioManager : MonoBehaviour
 
         instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsurePreferencesLoaded();
 
-        musicSource = CreateSource(MusicVolume);
+        musicSource = CreateSource(currentMusicVolume);
         musicSource.clip = musicClip;
         musicSource.loop = true;
 
-        uiSfxSource = CreateSource(UiClickVolume);
-        resultSfxSource = CreateSource(ResultJingleVolume);
+        uiSfxSource = CreateSource(currentSfxVolume);
+        resultSfxSource = CreateSource(GetResultJingleVolume());
 
         if (musicClip != null)
         {
@@ -67,6 +97,42 @@ public sealed class ArenaAudioManager : MonoBehaviour
         }
 
         instance.uiSfxSource.PlayOneShot(instance.uiClickClip);
+    }
+
+    public static void SetMusicVolume(float volume)
+    {
+        EnsurePreferencesLoaded();
+        currentMusicVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(
+            MusicVolumePreferenceKey,
+            currentMusicVolume);
+
+        if (instance != null && instance.musicSource != null)
+        {
+            instance.musicSource.volume = currentMusicVolume;
+        }
+    }
+
+    public static void SetSfxVolume(float volume)
+    {
+        EnsurePreferencesLoaded();
+        currentSfxVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(SfxVolumePreferenceKey, currentSfxVolume);
+
+        if (instance == null)
+        {
+            return;
+        }
+
+        if (instance.uiSfxSource != null)
+        {
+            instance.uiSfxSource.volume = currentSfxVolume;
+        }
+
+        if (instance.resultSfxSource != null)
+        {
+            instance.resultSfxSource.volume = GetResultJingleVolume();
+        }
     }
 
     public static void PlayPositiveResultJingle()
@@ -99,5 +165,27 @@ public sealed class ArenaAudioManager : MonoBehaviour
         source.volume = volume;
         source.spatialBlend = 0f;
         return source;
+    }
+
+    private static float GetResultJingleVolume()
+    {
+        return Mathf.Clamp01(
+            currentSfxVolume * ResultJingleRelativeGain);
+    }
+
+    private static void EnsurePreferencesLoaded()
+    {
+        if (preferencesLoaded)
+        {
+            return;
+        }
+
+        currentMusicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(
+            MusicVolumePreferenceKey,
+            DefaultMusicVolume));
+        currentSfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(
+            SfxVolumePreferenceKey,
+            DefaultSfxVolume));
+        preferencesLoaded = true;
     }
 }

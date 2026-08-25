@@ -14,14 +14,25 @@
     align-items: center;
     justify-content: center;
     background-color: var(--menu-background);
+    background-image: url("Images/MainMenuBackground.jpeg");
+    -unity-background-scale-mode: scale-and-crop;
     color: var(--text-primary);
+}
+
+.menu-background-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(9, 11, 14, 0.58);
 }
 
 .menu-card {
     width: 520px;
-    padding: 44px 54px 50px 54px;
+    padding: 36px 54px;
     align-items: center;
-    background-color: var(--card-background);
+    background-color: rgba(31, 35, 40, 0.9);
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
@@ -38,7 +49,7 @@
 }
 
 .game-title {
-    min-height: 56px;
+    min-height: 48px;
     color: var(--accent);
     font-size: 34px;
     -unity-font-style: bold;
@@ -47,7 +58,7 @@
 
 .menu-subtitle {
     margin-top: 4px;
-    margin-bottom: 28px;
+    margin-bottom: 22px;
     color: var(--text-secondary);
     font-size: 15px;
     -unity-text-align: middle-center;
@@ -59,7 +70,7 @@
 
 .mode-row {
     min-height: 68px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .mode-button {
@@ -120,6 +131,32 @@
 
 .configuration-form {
     width: 100%;
+}
+
+.settings-form {
+    width: 100%;
+}
+
+.settings-control-row {
+    min-height: 38px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.settings-slider {
+    flex-grow: 1;
+    margin-right: 12px;
+}
+
+.settings-value-label {
+    width: 48px;
+    color: var(--text-primary);
+    -unity-text-align: middle-right;
+}
+
+.settings-toggle {
+    height: 38px;
+    color: var(--text-primary);
 }
 
 .field-label {
