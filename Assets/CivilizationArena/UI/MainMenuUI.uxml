@@ -38,7 +38,7 @@
                     <ui:DropdownField name="ai-provider-field" class="configuration-field" />
 
                     <ui:Label text="MODEL" class="field-label" />
-                    <ui:TextField name="model-field" class="configuration-field" />
+                    <ui:DropdownField name="model-field" class="configuration-field" />
 
                     <ui:Label text="API KEY" class="field-label" />
                     <ui:TextField name="api-key-field" is-password-field="true" class="configuration-field" />
@@ -64,7 +64,7 @@
                         <ui:DropdownField name="ai-arena-side-a-provider-field" class="configuration-field" />
 
                         <ui:Label text="MODEL" class="field-label" />
-                        <ui:TextField name="ai-arena-side-a-model-field" class="configuration-field" />
+                        <ui:DropdownField name="ai-arena-side-a-model-field" class="configuration-field" />
 
                         <ui:Label text="API KEY" class="field-label" />
                         <ui:TextField name="ai-arena-side-a-api-key-field" is-password-field="true" class="configuration-field" />
@@ -77,7 +77,7 @@
                         <ui:DropdownField name="ai-arena-side-b-provider-field" class="configuration-field" />
 
                         <ui:Label text="MODEL" class="field-label" />
-                        <ui:TextField name="ai-arena-side-b-model-field" class="configuration-field" />
+                        <ui:DropdownField name="ai-arena-side-b-model-field" class="configuration-field" />
 
                         <ui:Label text="API KEY" class="field-label" />
                         <ui:TextField name="ai-arena-side-b-api-key-field" is-password-field="true" class="configuration-field" />

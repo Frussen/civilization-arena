@@ -9,6 +9,18 @@ public sealed class MainMenuController : MonoBehaviour
 {
     private const string ArenaSceneName = "M0";
     private const string OpenAIProviderLabel = "OpenAI";
+    private static readonly List<string> OpenAIModelChoices =
+        new List<string>
+        {
+            OpenAiLlmProvider.DefaultModel,
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna",
+            "gpt-5.5",
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-nano"
+        };
 
     private VisualElement modeSelectionView;
     private VisualElement singlePlayerConfigurationView;
@@ -318,7 +330,7 @@ public sealed class MainMenuController : MonoBehaviour
     private sealed class AiSideFields
     {
         private readonly DropdownField providerField;
-        private readonly TextField modelField;
+        private readonly DropdownField modelField;
         private readonly TextField apiKeyField;
 
         public bool IsValid => providerField != null &&
@@ -331,7 +343,7 @@ public sealed class MainMenuController : MonoBehaviour
             string apiKeyFieldName)
         {
             providerField = root.Q<DropdownField>(providerFieldName);
-            modelField = root.Q<TextField>(modelFieldName);
+            modelField = root.Q<DropdownField>(modelFieldName);
             apiKeyField = root.Q<TextField>(apiKeyFieldName);
         }
 
@@ -341,14 +353,16 @@ public sealed class MainMenuController : MonoBehaviour
             {
                 OpenAIProviderLabel
             };
+            modelField.choices = OpenAIModelChoices;
             apiKeyField.isPasswordField = true;
             ResetDefaults();
         }
 
         public void ResetDefaults()
         {
-            providerField.index = 0;
-            modelField.value = OpenAiLlmProvider.DefaultModel;
+            providerField.SetValueWithoutNotify(OpenAIProviderLabel);
+            modelField.SetValueWithoutNotify(
+                OpenAiLlmProvider.DefaultModel);
         }
 
         public void ClearCredential()
@@ -375,10 +389,12 @@ public sealed class MainMenuController : MonoBehaviour
                 return false;
             }
 
-            string model = modelField.value?.Trim();
-            if (string.IsNullOrWhiteSpace(model))
+            string model = modelField.value;
+            if (string.IsNullOrWhiteSpace(model) ||
+                !OpenAIModelChoices.Contains(model))
             {
-                error = $"{sideName} model is required.";
+                error =
+                    $"{sideName}: select a supported OpenAI model.";
                 return false;
             }
 
