@@ -12,6 +12,8 @@ public sealed class MainMenuController : MonoBehaviour
     private const string LocalProviderLabel = "Local (LM Studio)";
     private const string FullscreenPreferenceKey =
         "CivilizationArena.Fullscreen";
+    private const int DefaultWindowedWidth = 1200;
+    private const int DefaultWindowedHeight = 800;
     private static readonly List<string> OpenAIModelChoices =
         new List<string>
         {
@@ -24,6 +26,9 @@ public sealed class MainMenuController : MonoBehaviour
             "gpt-5.4-mini",
             "gpt-5.4-nano"
         };
+    private static int windowedWidth;
+    private static int windowedHeight;
+    private static bool hasCapturedWindowedResolution;
 
     private VisualElement modeSelectionView;
     private VisualElement singlePlayerConfigurationView;
@@ -407,7 +412,7 @@ public sealed class MainMenuController : MonoBehaviour
 
     private static void HandleFullscreenChanged(ChangeEvent<bool> change)
     {
-        Screen.fullScreen = change.newValue;
+        ApplyFullscreen(change.newValue);
         PlayerPrefs.SetInt(
             FullscreenPreferenceKey,
             change.newValue ? 1 : 0);
@@ -425,8 +430,38 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
-        Screen.fullScreen = PlayerPrefs.GetInt(
-            FullscreenPreferenceKey) != 0;
+        ApplyFullscreen(PlayerPrefs.GetInt(FullscreenPreferenceKey) != 0);
+    }
+
+    private static void ApplyFullscreen(bool enabled)
+    {
+        if (enabled)
+        {
+            if (!Screen.fullScreen)
+            {
+                windowedWidth = Screen.width;
+                windowedHeight = Screen.height;
+                hasCapturedWindowedResolution = true;
+            }
+
+            Resolution resolution = Screen.currentResolution;
+            Screen.SetResolution(
+                resolution.width,
+                resolution.height,
+                FullScreenMode.FullScreenWindow);
+            return;
+        }
+
+        int targetWidth = hasCapturedWindowedResolution
+            ? windowedWidth
+            : DefaultWindowedWidth;
+        int targetHeight = hasCapturedWindowedResolution
+            ? windowedHeight
+            : DefaultWindowedHeight;
+        Screen.SetResolution(
+            targetWidth,
+            targetHeight,
+            FullScreenMode.Windowed);
     }
 
     private static void SetConfigurationError(Label label, string message)

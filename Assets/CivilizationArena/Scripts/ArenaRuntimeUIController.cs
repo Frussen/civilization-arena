@@ -429,7 +429,14 @@ public sealed class ArenaRuntimeUIController : MonoBehaviour
         ArenaManualObservationView observation =
             ArenaManualObservationView.Parse(controller.CapturedObservation);
 
-        turnLabel.text = $"Agent {controller.ActiveSide} turn";
+        AgentControlMode controlMode = controller.ActiveSide == ArenaSide.A
+            ? roundController.SideAControlMode
+            : roundController.SideBControlMode;
+        string controllerLabel = controlMode == AgentControlMode.Manual
+            ? "Player"
+            : "Agent";
+        turnLabel.text =
+            $"{controllerLabel} {controller.ActiveSide} turn";
         ApplyObservationToHud(
             observation,
             $"Round {controller.CurrentRoundId}");
