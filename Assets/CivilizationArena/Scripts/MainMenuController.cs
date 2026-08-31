@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+using System.Runtime.InteropServices;
+#endif
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -7,6 +10,16 @@ using UnityEngine.UIElements;
 [RequireComponent(typeof(UIDocument))]
 public sealed class MainMenuController : MonoBehaviour
 {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+    [DllImport("CivilizationArenaMacFullscreen")]
+    private static extern void
+        CivilizationArena_InstallNativeFullscreenShortcut();
+
+    [DllImport("CivilizationArenaMacFullscreen")]
+    private static extern void CivilizationArena_SetNativeFullscreen(
+        int enabled);
+#endif
+
     private const string ArenaSceneName = "M0";
     private const string OpenAIProviderLabel = "OpenAI";
     private const string LocalProviderLabel = "Local (LM Studio)";
@@ -57,6 +70,9 @@ public sealed class MainMenuController : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+        CivilizationArena_InstallNativeFullscreenShortcut();
+#endif
         ApplySavedFullscreenPreference();
 
         UIDocument document = GetComponent<UIDocument>();
@@ -435,6 +451,9 @@ public sealed class MainMenuController : MonoBehaviour
 
     private static void ApplyFullscreen(bool enabled)
     {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+        CivilizationArena_SetNativeFullscreen(enabled ? 1 : 0);
+#else
         if (enabled)
         {
             if (!Screen.fullScreen)
@@ -444,11 +463,7 @@ public sealed class MainMenuController : MonoBehaviour
                 hasCapturedWindowedResolution = true;
             }
 
-            Resolution resolution = Screen.currentResolution;
-            Screen.SetResolution(
-                resolution.width,
-                resolution.height,
-                FullScreenMode.FullScreenWindow);
+            Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
             return;
         }
 
@@ -462,6 +477,7 @@ public sealed class MainMenuController : MonoBehaviour
             targetWidth,
             targetHeight,
             FullScreenMode.Windowed);
+#endif
     }
 
     private static void SetConfigurationError(Label label, string message)
