@@ -138,6 +138,18 @@
     width: 100%;
 }
 
+.network-status-label {
+    min-height: 20px;
+    margin-bottom: 14px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    -unity-text-align: middle-center;
+}
+
+.online-join-button {
+    margin-top: 10px;
+}
+
 .configuration-field-row {
     width: 100%;
 }

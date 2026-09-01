@@ -2,6 +2,7 @@ using System.Collections.Generic;
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -46,10 +47,12 @@ public sealed class MainMenuController : MonoBehaviour
     private VisualElement modeSelectionView;
     private VisualElement singlePlayerConfigurationView;
     private VisualElement aiArenaConfigurationView;
+    private VisualElement onlineMultiplayerView;
     private VisualElement settingsView;
     private Button aiArenaButton;
     private Button singlePlayerButton;
     private Button localMultiplayerButton;
+    private Button onlineMultiplayerButton;
     private Button settingsButton;
     private AiSideFields singlePlayerAiFields;
     private AiSideFields aiArenaSideAFields;
@@ -60,12 +63,20 @@ public sealed class MainMenuController : MonoBehaviour
     private Button singlePlayerStartButton;
     private Button aiArenaBackButton;
     private Button aiArenaStartButton;
+    private Button hostGameButton;
+    private Button joinGameButton;
+    private Button onlineMultiplayerBackButton;
+    private Button onlineStartMatchButton;
+    private Label networkStatusLabel;
     private Slider musicVolumeSlider;
     private Label musicVolumeValueLabel;
     private Slider sfxVolumeSlider;
     private Label sfxVolumeValueLabel;
     private Toggle fullscreenToggle;
     private Button settingsBackButton;
+    private NetworkManager subscribedNetworkManager;
+    private bool clientHasConnected;
+    private bool onlineSceneLoadRequested;
     private bool loadRequested;
 
     private void Start()
@@ -87,17 +98,20 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
-        root.Q<Button>("online-multiplayer-button")?.SetEnabled(false);
         modeSelectionView = root.Q<VisualElement>("mode-selection-view");
         singlePlayerConfigurationView =
             root.Q<VisualElement>("single-player-configuration-view");
         aiArenaConfigurationView =
             root.Q<VisualElement>("ai-arena-configuration-view");
+        onlineMultiplayerView =
+            root.Q<VisualElement>("online-multiplayer-view");
         settingsView = root.Q<VisualElement>("settings-view");
         aiArenaButton = root.Q<Button>("ai-arena-button");
         singlePlayerButton = root.Q<Button>("single-player-button");
         localMultiplayerButton =
             root.Q<Button>("local-multiplayer-button");
+        onlineMultiplayerButton =
+            root.Q<Button>("online-multiplayer-button");
         settingsButton = root.Q<Button>("settings-button");
         singlePlayerAiFields = new AiSideFields(
             root.Q<VisualElement>("single-player-ai-fields"));
@@ -115,6 +129,13 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaBackButton = root.Q<Button>("ai-arena-back-button");
         aiArenaStartButton =
             root.Q<Button>("ai-arena-start-match-button");
+        hostGameButton = root.Q<Button>("host-game-button");
+        joinGameButton = root.Q<Button>("join-game-button");
+        onlineMultiplayerBackButton =
+            root.Q<Button>("online-multiplayer-back-button");
+        onlineStartMatchButton =
+            root.Q<Button>("online-start-match-button");
+        networkStatusLabel = root.Q<Label>("network-status-label");
         musicVolumeSlider =
             root.Q<Slider>("music-volume-slider");
         musicVolumeValueLabel =
@@ -128,10 +149,12 @@ public sealed class MainMenuController : MonoBehaviour
         if (modeSelectionView == null ||
             singlePlayerConfigurationView == null ||
             aiArenaConfigurationView == null ||
+            onlineMultiplayerView == null ||
             settingsView == null ||
             aiArenaButton == null ||
             singlePlayerButton == null ||
             localMultiplayerButton == null ||
+            onlineMultiplayerButton == null ||
             settingsButton == null ||
             !singlePlayerAiFields.IsValid ||
             !aiArenaSideAFields.IsValid ||
@@ -142,6 +165,11 @@ public sealed class MainMenuController : MonoBehaviour
             singlePlayerStartButton == null ||
             aiArenaBackButton == null ||
             aiArenaStartButton == null ||
+            hostGameButton == null ||
+            joinGameButton == null ||
+            onlineMultiplayerBackButton == null ||
+            onlineStartMatchButton == null ||
+            networkStatusLabel == null ||
             musicVolumeSlider == null ||
             musicVolumeValueLabel == null ||
             sfxVolumeSlider == null ||
@@ -160,16 +188,23 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaSideAFields.Initialize();
         aiArenaSideBFields.Initialize();
         RefreshSettingsControls();
+        SubscribeToNetworkManager(NetworkManager.Singleton);
+        RefreshNetworkState(resetDisconnectedStatus: true);
         ShowModeSelection();
 
         aiArenaButton.clicked += ShowAiArenaConfiguration;
         singlePlayerButton.clicked += ShowSinglePlayerConfiguration;
         localMultiplayerButton.clicked += LoadLocalMultiplayer;
+        onlineMultiplayerButton.clicked += ShowOnlineMultiplayer;
         settingsButton.clicked += ShowSettings;
         singlePlayerBackButton.clicked += ReturnToModeSelection;
         singlePlayerStartButton.clicked += StartSinglePlayerMatch;
         aiArenaBackButton.clicked += ReturnToModeSelection;
         aiArenaStartButton.clicked += StartAiArenaMatch;
+        hostGameButton.clicked += StartHost;
+        joinGameButton.clicked += StartClient;
+        onlineMultiplayerBackButton.clicked += ReturnToModeSelection;
+        onlineStartMatchButton.clicked += StartOnlineMatch;
         settingsBackButton.clicked += ReturnFromSettings;
         musicVolumeSlider.RegisterValueChangedCallback(
             HandleMusicVolumeChanged);
@@ -194,6 +229,11 @@ public sealed class MainMenuController : MonoBehaviour
         if (localMultiplayerButton != null)
         {
             localMultiplayerButton.clicked -= LoadLocalMultiplayer;
+        }
+
+        if (onlineMultiplayerButton != null)
+        {
+            onlineMultiplayerButton.clicked -= ShowOnlineMultiplayer;
         }
 
         if (settingsButton != null)
@@ -221,6 +261,26 @@ public sealed class MainMenuController : MonoBehaviour
             aiArenaStartButton.clicked -= StartAiArenaMatch;
         }
 
+        if (hostGameButton != null)
+        {
+            hostGameButton.clicked -= StartHost;
+        }
+
+        if (joinGameButton != null)
+        {
+            joinGameButton.clicked -= StartClient;
+        }
+
+        if (onlineMultiplayerBackButton != null)
+        {
+            onlineMultiplayerBackButton.clicked -= ReturnToModeSelection;
+        }
+
+        if (onlineStartMatchButton != null)
+        {
+            onlineStartMatchButton.clicked -= StartOnlineMatch;
+        }
+
         if (settingsBackButton != null)
         {
             settingsBackButton.clicked -= ReturnFromSettings;
@@ -243,6 +303,8 @@ public sealed class MainMenuController : MonoBehaviour
             fullscreenToggle.UnregisterValueChangedCallback(
                 HandleFullscreenChanged);
         }
+
+        UnsubscribeFromNetworkManager();
 
         singlePlayerAiFields?.UnregisterCallbacks();
         aiArenaSideAFields?.UnregisterCallbacks();
@@ -289,6 +351,279 @@ public sealed class MainMenuController : MonoBehaviour
 
         ArenaAudioManager.PlayUiClick();
         LoadMatch(MatchConfiguration.LocalMultiplayer);
+    }
+
+    private void ShowOnlineMultiplayer()
+    {
+        if (loadRequested)
+        {
+            return;
+        }
+
+        ArenaAudioManager.PlayUiClick();
+        modeSelectionView.style.display = DisplayStyle.None;
+        singlePlayerConfigurationView.style.display = DisplayStyle.None;
+        aiArenaConfigurationView.style.display = DisplayStyle.None;
+        settingsView.style.display = DisplayStyle.None;
+        SubscribeToNetworkManager(NetworkManager.Singleton);
+        RefreshNetworkState(resetDisconnectedStatus: false);
+        onlineMultiplayerView.style.display = DisplayStyle.Flex;
+    }
+
+    private void StartHost()
+    {
+        ArenaAudioManager.PlayUiClick();
+        StartNetworkSession(asHost: true);
+    }
+
+    private void StartClient()
+    {
+        ArenaAudioManager.PlayUiClick();
+        StartNetworkSession(asHost: false);
+    }
+
+    private void StartNetworkSession(bool asHost)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+        {
+            SetNetworkStatus("Network unavailable");
+            RefreshNetworkButtons();
+            Debug.LogError(
+                "Cannot start online multiplayer: no NetworkManager " +
+                "singleton is available in the Main Menu scene.",
+                this);
+            return;
+        }
+
+        SubscribeToNetworkManager(networkManager);
+        if (networkManager.IsListening)
+        {
+            RefreshNetworkState(resetDisconnectedStatus: false);
+            return;
+        }
+
+        clientHasConnected = false;
+        SetNetworkStatus(asHost ? "Starting host" : "Connecting to host");
+
+        bool started = asHost
+            ? networkManager.StartHost()
+            : networkManager.StartClient();
+        if (!started)
+        {
+            string mode = asHost ? "host" : "client";
+            SetNetworkStatus($"Failed to start {mode}");
+            Debug.LogError(
+                $"Failed to start the online multiplayer {mode}.",
+                this);
+        }
+        else if (asHost)
+        {
+            SetNetworkStatus("Hosting game");
+        }
+
+        RefreshNetworkButtons();
+    }
+
+    private void StartOnlineMatch()
+    {
+        if (onlineSceneLoadRequested)
+        {
+            return;
+        }
+
+        ArenaAudioManager.PlayUiClick();
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+        {
+            Debug.LogError(
+                "Cannot start online match: NetworkManager is missing.",
+                this);
+            RefreshNetworkButtons();
+            return;
+        }
+
+        if (!networkManager.IsListening)
+        {
+            Debug.LogError(
+                "Cannot start online match: networking is not active.",
+                this);
+            RefreshNetworkButtons();
+            return;
+        }
+
+        if (!networkManager.IsHost)
+        {
+            Debug.LogError(
+                "Cannot start online match: only the host can start it.",
+                this);
+            RefreshNetworkButtons();
+            return;
+        }
+
+        NetworkSceneManager networkSceneManager =
+            networkManager.SceneManager;
+        if (networkSceneManager == null)
+        {
+            Debug.LogError(
+                "Cannot start online match: NGO scene management is " +
+                "unavailable.",
+                this);
+            RefreshNetworkButtons();
+            return;
+        }
+
+        SceneEventProgressStatus status = networkSceneManager.LoadScene(
+            ArenaSceneName,
+            LoadSceneMode.Single);
+        if (status != SceneEventProgressStatus.Started)
+        {
+            Debug.LogError(
+                "Cannot start online match: NGO scene load returned " +
+                $"{status}.",
+                this);
+            RefreshNetworkButtons();
+            return;
+        }
+
+        onlineSceneLoadRequested = true;
+        SetNetworkStatus("Starting match");
+        RefreshNetworkButtons();
+    }
+
+    private void SubscribeToNetworkManager(NetworkManager networkManager)
+    {
+        if (subscribedNetworkManager == networkManager)
+        {
+            return;
+        }
+
+        UnsubscribeFromNetworkManager();
+        if (networkManager == null)
+        {
+            return;
+        }
+
+        subscribedNetworkManager = networkManager;
+        subscribedNetworkManager.OnClientConnectedCallback +=
+            HandleClientConnected;
+        subscribedNetworkManager.OnClientDisconnectCallback +=
+            HandleClientDisconnected;
+        subscribedNetworkManager.OnTransportFailure += HandleTransportFailure;
+    }
+
+    private void UnsubscribeFromNetworkManager()
+    {
+        if (subscribedNetworkManager == null)
+        {
+            return;
+        }
+
+        subscribedNetworkManager.OnClientConnectedCallback -=
+            HandleClientConnected;
+        subscribedNetworkManager.OnClientDisconnectCallback -=
+            HandleClientDisconnected;
+        subscribedNetworkManager.OnTransportFailure -= HandleTransportFailure;
+        subscribedNetworkManager = null;
+    }
+
+    private void HandleClientConnected(ulong clientId)
+    {
+        NetworkManager networkManager = subscribedNetworkManager;
+        if (networkManager == null ||
+            clientId != networkManager.LocalClientId)
+        {
+            return;
+        }
+
+        if (networkManager.IsHost)
+        {
+            SetNetworkStatus("Hosting game");
+        }
+        else
+        {
+            clientHasConnected = true;
+            SetNetworkStatus("Connected to host");
+        }
+
+        RefreshNetworkButtons();
+    }
+
+    private void HandleClientDisconnected(ulong clientId)
+    {
+        NetworkManager networkManager = subscribedNetworkManager;
+        if (networkManager == null ||
+            networkManager.IsHost &&
+            clientId != networkManager.LocalClientId)
+        {
+            return;
+        }
+
+        SetNetworkStatus(clientHasConnected
+            ? "Disconnected from host"
+            : "Connection failed");
+        clientHasConnected = false;
+        onlineSceneLoadRequested = false;
+        RefreshNetworkButtons();
+    }
+
+    private void HandleTransportFailure()
+    {
+        SetNetworkStatus("Network error");
+        clientHasConnected = false;
+        onlineSceneLoadRequested = false;
+        RefreshNetworkButtons();
+    }
+
+    private void RefreshNetworkState(bool resetDisconnectedStatus)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager != null && networkManager.IsHost)
+        {
+            SetNetworkStatus("Hosting game");
+        }
+        else if (networkManager != null &&
+                 networkManager.IsConnectedClient)
+        {
+            clientHasConnected = true;
+            SetNetworkStatus("Connected to host");
+        }
+        else if (resetDisconnectedStatus)
+        {
+            clientHasConnected = false;
+            SetNetworkStatus("Not connected");
+        }
+
+        RefreshNetworkButtons();
+    }
+
+    private void RefreshNetworkButtons()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        bool canStart = networkManager == null ||
+            !networkManager.IsListening;
+        hostGameButton?.SetEnabled(canStart);
+        joinGameButton?.SetEnabled(canStart);
+
+        bool isHostRunning = networkManager != null &&
+            networkManager.IsListening &&
+            networkManager.IsHost;
+        if (onlineStartMatchButton != null)
+        {
+            onlineStartMatchButton.style.display = isHostRunning
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            onlineStartMatchButton.SetEnabled(
+                isHostRunning && !onlineSceneLoadRequested);
+        }
+    }
+
+    private void SetNetworkStatus(string status)
+    {
+        if (networkStatusLabel != null)
+        {
+            networkStatusLabel.text = status;
+        }
     }
 
     private void StartSinglePlayerMatch()
@@ -366,6 +701,7 @@ public sealed class MainMenuController : MonoBehaviour
         modeSelectionView.style.display = DisplayStyle.None;
         singlePlayerConfigurationView.style.display = DisplayStyle.None;
         aiArenaConfigurationView.style.display = DisplayStyle.None;
+        onlineMultiplayerView.style.display = DisplayStyle.None;
         settingsView.style.display = DisplayStyle.Flex;
     }
 
@@ -385,7 +721,8 @@ public sealed class MainMenuController : MonoBehaviour
     {
         if (loadRequested || modeSelectionView == null ||
             singlePlayerConfigurationView == null ||
-            aiArenaConfigurationView == null)
+            aiArenaConfigurationView == null ||
+            onlineMultiplayerView == null)
         {
             return;
         }
@@ -398,6 +735,7 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaSideBFields.ResetDefaults();
         singlePlayerConfigurationView.style.display = DisplayStyle.None;
         aiArenaConfigurationView.style.display = DisplayStyle.None;
+        onlineMultiplayerView.style.display = DisplayStyle.None;
         settingsView.style.display = DisplayStyle.None;
         modeSelectionView.style.display = DisplayStyle.Flex;
     }
@@ -511,6 +849,7 @@ public sealed class MainMenuController : MonoBehaviour
         aiArenaButton.SetEnabled(false);
         singlePlayerButton.SetEnabled(false);
         localMultiplayerButton.SetEnabled(false);
+        onlineMultiplayerButton.SetEnabled(false);
         settingsButton.SetEnabled(false);
         singlePlayerBackButton.SetEnabled(false);
         singlePlayerStartButton.SetEnabled(false);
